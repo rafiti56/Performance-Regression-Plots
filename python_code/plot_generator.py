@@ -4,28 +4,33 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+
+# get_sorted files takes a folder path and file pattern as an input and returns 
 def get_sorted_files(folder_path, file_pattern):
     # List all files in the given folder
     files = os.listdir(folder_path)
     
-    # Filter files based on the provided pattern
+    # Filter files based on the provided pattern called in if main
+    # list comprehension 
     matched_files = [f for f in files if re.match(file_pattern, f)]
     
-    # Sort files based on numerical order extracted from filenames
-    sorted_files = sorted(matched_files, key=lambda x: int(re.findall(r'\d+', x)[0]))
     
+    sorted_files = sorted(matched_files, key=lambda x: int(re.findall(r'\d+', x)[0]))
+       
     return sorted_files
 
+#takes the folder path as an input and specifies a file pattern, returns a dictionary with keys specified by the user that are assigned to the filtered index values from each text file
 def process_files(folder_path):
-    # Define the pattern of the filenames you are looking for
-    file_pattern = r'data_cores\d+\.txt'  # Adjust the pattern as needed
+    # Define the pattern of the filenames
+    # Adjust the pattern as needed
+    file_pattern = r'data_cores\d+\.txt' 
     
-    # Get the sorted list of files
+    # call sorted files function
     sorted_files = get_sorted_files(folder_path, file_pattern)
 
-    results ={}
-    order = 1
-    extracted_Total = []
+    #results ={}
+    #order = 1
+    extracted_Nox_Solve = []
     extracted_Fill = []
     extracted_Precond = []
     extracted_linsolve = []
@@ -41,7 +46,7 @@ def process_files(folder_path):
         
             # Define the timer names and regular expressions to extract their values
             timers = {
-                "Albany Total Time": r'Albany Total Time: (\d+\.\d+)',
+                "Nox Solver": r'Piro::NOXSolver::evalModelImpl::solve: (\d+\.\d+)',
                 "Total Fill Time": r'Albany: Total Fill Time: (\d+\.\d+)',
                 "Precond": r'NOX Total Preconditioner Construction: (\d+\.\d+)',
                 "Total Lin": r'NOX Total Linear Solve: (\d+\.\d+)',
@@ -56,16 +61,16 @@ def process_files(folder_path):
                     extracted_timers[timer_name] = float(timer_value)
                 else:
                     extracted_timers[timer_name] = None
-            results[order] = extracted_timers
-            extracted_Total.append(extracted_timers.get('Albany Total Time'))
+            #results[order] = extracted_timers
+            extracted_Nox_Solve.append(extracted_timers.get('Nox Solver'))
             extracted_Fill.append(extracted_timers.get('Total Fill Time'))
             extracted_Precond.append(extracted_timers.get('Precond'))
             extracted_linsolve.append(extracted_timers.get('Total Lin'))
             
-            order += 1
+            #order += 1
      #can add results       
     return {
-        'Total Time': extracted_Total,
+        'Nox Solver': extracted_Nox_Solve,
         'Total Fill': extracted_Fill,
         'Total Precond': extracted_Precond,
         'Total Linear': extracted_linsolve

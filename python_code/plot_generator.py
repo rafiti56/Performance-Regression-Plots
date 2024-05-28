@@ -25,7 +25,7 @@ def process_files(folder_path):
 
     results ={}
     order = 1
-    extracted_Total = []
+    extracted_Piro = []
     extracted_Fill = []
     extracted_Precond = []
     extracted_linsolve = []
@@ -41,7 +41,7 @@ def process_files(folder_path):
         
             # Define the timer names and regular expressions to extract their values
             timers = {
-                "Albany Total Time": r'Albany Total Time: (\d+\.\d+)',
+                "Albany Piro": r'Piro::NOXSolver::evalModelImpl::solve: (\d+\.\d+)',
                 "Total Fill Time": r'Albany: Total Fill Time: (\d+\.\d+)',
                 "Precond": r'NOX Total Preconditioner Construction: (\d+\.\d+)',
                 "Total Lin": r'NOX Total Linear Solve: (\d+\.\d+)',
@@ -57,7 +57,7 @@ def process_files(folder_path):
                 else:
                     extracted_timers[timer_name] = None
             results[order] = extracted_timers
-            extracted_Total.append(extracted_timers.get('Albany Total Time'))
+            extracted_Piro.append(extracted_timers.get('Albany Piro'))
             extracted_Fill.append(extracted_timers.get('Total Fill Time'))
             extracted_Precond.append(extracted_timers.get('Precond'))
             extracted_linsolve.append(extracted_timers.get('Total Lin'))
@@ -65,7 +65,7 @@ def process_files(folder_path):
             order += 1
      #can add results       
     return {
-        'Total Time': extracted_Total,
+        'Total Piro': extracted_Piro,
         'Total Fill': extracted_Fill,
         'Total Precond': extracted_Precond,
         'Total Linear': extracted_linsolve
@@ -89,9 +89,10 @@ def plot_wall_time(cores, actual_comp_time, ideal_times, plot_title):
     plt.xlabel("Core Count")
     plt.ylabel('Wall-Clock-Time')
     plt.xscale('log', base =2)
+    #plt.yscale('log', base =2)
     plt.title(plot_title)
     plt.legend()
-    plt.show()
+    plt.savefig(plot_title, dpi =300)
 
 def plot_efficiency(cores,efficiency_actual, ideal_efficiency,plot_title):
     df = pd.DataFrame({
@@ -112,7 +113,7 @@ def plot_efficiency(cores,efficiency_actual, ideal_efficiency,plot_title):
     plt.xscale('log', base =2)
     plt.title(plot_title)
     plt.legend()
-    plt.show()
+    plt.savefig(plot_title, dpi =300)
 
 def plot_speedup(cores, speedup, ideal_speedup ,plot_title):
     df = pd.DataFrame({
@@ -124,23 +125,23 @@ def plot_speedup(cores, speedup, ideal_speedup ,plot_title):
     sns.set_style("whitegrid")
     sns.set_context("paper")
 
-    #Plot efficiency
+    #Plot speedup
     plt.figure(figsize=(12,6))
     sns.lineplot(x = 'Cores', y='Speedup', data=df, marker='o', label ='Actual Speedup')
     sns.lineplot(x = 'Cores', y='Ideal_speedup', data=df, marker='o', label ='Ideal Speedup', linestyle='--')
     plt.xlabel("Core Count")
     plt.ylabel('Speedup')
-    plt.xscale('log', base =2)
+    #plt.xscale('log', base =2)
     plt.title(plot_title)
     plt.legend()
-    plt.show()
+    plt.savefig(plot_title, dpi =300)
 
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Desktop\Python_learn\text_files'  # Update with the path to your folder
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with the path to your folder
     All_totals = process_files(folder_path)
     
-    cores = [4,8,16,32]
+    cores = [4,8,16,32,64]
     ideal_efficiency = [100]*len(cores)
     print(All_totals)
 

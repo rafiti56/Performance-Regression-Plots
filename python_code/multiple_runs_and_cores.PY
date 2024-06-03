@@ -62,16 +62,103 @@ def process_files(folder_path):
             results[core][run].append(extracted_timers)
     return results
 
-def calculate_speedup_efficiency(df):
-    single_core_times = df[df['Cores'] == 4].mean()
-    df_speedup_efficiency = df.copy()
-    
-    timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
-    for timer in timers:
-        df_speedup_efficiency[f'{timer}_Speedup'] = single_core_times[timer] / df[timer]
-        df_speedup_efficiency[f'{timer}_Efficiency'] = (df_speedup_efficiency[f'{timer}_Speedup'] / df['Cores']) * 100
 
-    return df_speedup_efficiency
+
+def plot_wall_time(cores, actual_comp_time, ideal_times, plot_title):
+    df = pd.DataFrame({
+        'Cores': cores,
+        'Clock_Time': actual_comp_time,
+        'Ideal_Time': ideal_times
+    })
+
+    sns.set_style("whitegrid")
+    sns.set_context("paper")
+
+    #Plot clock time
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x = 'Cores', y='Clock_Time', data=df, marker='o', label ='Actual-Time')
+    sns.lineplot(x = 'Cores', y='Ideal_Time', data=df, marker='o', label ='Ideal-Time', linestyle='--')
+    plt.xlabel("Core Count")
+    plt.ylabel('Wall-Clock-Time')
+    plt.xscale('log', base =2)
+    plt.title(plot_title)
+    plt.legend()
+    plt.show()
+
+def plot_efficiency(cores,efficiency_actual, ideal_efficiency,plot_title):
+    df = pd.DataFrame({
+        'Cores': cores,
+        'Actual_Efficiency': efficiency_actual,
+        'Ideal_Efficiency': ideal_efficiency
+    })
+
+    sns.set_style("whitegrid")
+    sns.set_context("paper")
+
+    #Plot efficiency
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x = 'Cores', y='Actual_Efficiency', data=df, marker='o', label ='Actual Efficiency')
+    sns.lineplot(x = 'Cores', y='Ideal_Efficiency', data=df, marker='o', label ='Ideal Efficiency', linestyle='--')
+    plt.xlabel("Core Count")
+    plt.ylabel('Efficiency')
+    plt.xscale('log', base =2)
+    plt.title(plot_title)
+    plt.legend()
+    plt.show()
+
+def plot_speedup(cores, speedup, ideal_speedup ,plot_title):
+    df = pd.DataFrame({
+        'Cores': cores,
+        'Speedup': speedup,
+        'Ideal_speedup': ideal_speedup
+    })
+
+    sns.set_style("whitegrid")
+    sns.set_context("paper")
+
+    #Plot speedup
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x = 'Cores', y='Speedup', data=df, marker='o', label ='Actual Speedup')
+    sns.lineplot(x = 'Cores', y='Ideal_speedup', data=df, marker='o', label ='Ideal Speedup', linestyle='--')
+    plt.xlabel("Core Count")
+    plt.ylabel('Speedup')
+    plt.xscale('log', base =2)
+    plt.title(plot_title)
+    plt.legend()
+    plt.show()
+
+
+
+def create_sorted_dictionary(df, timers, cores):
+        timer_values_by_core = {timer: [] for timer in timers}
+
+            # Populate the lists with timer values for each core count
+        for core in cores:
+            core_group = df[df['Cores'] == core]
+            for timer in timers:
+                timer_mean_value = core_group[timer].mean()  # Use mean to get a single value for each core
+                timer_values_by_core[timer].append(timer_mean_value)
+        return timer_values_by_core
+
+def get_metrics(timer_values_by_core):
+        
+        for key, actual_comp_time in timer_values_by_core.items():
+            base_comp_time = actual_comp_time[0]
+            ideal_times = []
+            speedup = []
+            ideal_speedup = []
+            
+            
+            for i in range(len(cores)):
+                
+                ideal_times.append(base_comp_time/(2**i))
+                speedup.append(base_comp_time/actual_comp_time[i])
+                ideal_speedup.append(base_comp_time/ideal_times[i])
+            efficiency_actual = [(ideal/actual) *100 for ideal,actual in zip(ideal_times,actual_comp_time) ]
+            
+            plot_efficiency(cores, efficiency_actual, ideal_efficiency, plot_title=f'{key} Efficiency')
+            plot_wall_time(cores, actual_comp_time, ideal_times, plot_title=f'{key} Time')
+            plot_speedup(cores, speedup, ideal_speedup ,plot_title=f'{key} Speedup' )
 
 if __name__ == "__main__":
     folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with path to folder containing run cases as text files
@@ -100,19 +187,6 @@ if __name__ == "__main__":
 #5      25.3387          2.70286  12.2567    10.2876      8    1
 #6      25.3760          2.68414  12.2851    10.3191      8    2 
 
-    sns.set(style="whitegrid")
-
-    categories = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
-    #creat categories list with column names in dataframe to iterate over each item in the list in order to plot each one using the matplotlib library
-    for category in categories:
-        plt.figure(figsize=(10, 5))
-        sns.lineplot(x='Cores', y=category, hue='Run', data=df, marker="o")
-        plt.title(f'{category} vs. Number of Cores')
-        plt.xlabel('Number of Cores')
-        plt.ylabel('Time')
-        plt.legend(title='Run')
-        plt.tight_layout(rect=[0, 0, 1, 0.97])
-        plt.show()
 
     grouped_by_cores = df.groupby('Cores').agg(
         {
@@ -133,14 +207,14 @@ if __name__ == "__main__":
 
     timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
     colors = ['b', 'g', 'r', 'c']
-
+    #scatterplot
     #loops through groyuped_by cores indexes which are [4,8,16,32,64]
     for core in grouped_by_cores.index:
         plt.figure(figsize=(12, 8))
         for i, timer in enumerate(timers):
             plt.subplot(2, 2, i+1)
             core_data = df[df['Cores'] == core]
-            plt.scatter(core_data['Run'], core_data[timer], label=f'Core {core}', color=colors[i])
+            plt.scatter(range(1,len(core_data['Run'])+1), core_data[timer], label=f'Core {core}', color=colors[i])
             #sns.scatterplot(x= range(1,len(timers)+1), y=timers, color = 'blue', label = 'Data Points')
             mean = grouped_by_cores.loc[core, f'{timer}_mean']
             std = grouped_by_cores.loc[core, f'{timer}_std']
@@ -149,52 +223,20 @@ if __name__ == "__main__":
             plt.axhline(mean - 3 * std, color='r', linestyle='--', label='-3 Std Dev')
             plt.title(f'{timer} for Core {core}')
             plt.xlabel('Run')
+            plt.xticks(range(1,len(core_data['Run'])+1))
             plt.ylabel(timer)
             plt.legend()
             plt.tight_layout()
 
     plt.show()
 
-    # Calculate speedup and efficiency
-    df_speedup_efficiency = calculate_speedup_efficiency(df)
 
     # Generate ideal values for plotting
     cores = sorted(df['Cores'].unique())
-    ideal_speedup = [1] + cores[1:]  # Ideal speedup is linear with the number of cores
-    ideal_efficiency = [100] + [100] * (len(cores) - 1)  # Ideal efficiency is always 100%
-    single_core_time = df[df['Cores'] == 4].mean()  # Assuming 4 is the single-core time
-    ideal_wall_time = [single_core_time[category] / core for core in cores] #
+    run =sorted(df['Run'].unique())
+    ideal_efficiency = [100]*len(cores)
 
-    for timer in timers:
-        # Plot Wall-Clock Time
-        plt.figure(figsize=(10, 5))
-        sns.lineplot(x='Cores', y=timer, hue='Run', data=df, marker="o")
-        plt.plot(cores, ideal_wall_time, 'k--', label='Ideal Wall-Clock Time')
-        plt.title(f'Wall-Clock Time ({timer}) vs. Number of Cores')
-        plt.xlabel('Number of Cores')
-        plt.ylabel('Time')
-        plt.legend(title='Run')
-        plt.tight_layout(rect=[0, 0, 1, 0.97])
-        plt.show()
-        
-        # Plot Speedup
-        plt.figure(figsize=(10, 5))
-        sns.lineplot(x='Cores', y=f'{timer}_Speedup', hue='Run', data=df_speedup_efficiency, marker="o")
-        plt.plot(cores, ideal_speedup, 'k--', label='Ideal Speedup')
-        plt.title(f'Speedup ({timer}) vs. Number of Cores')
-        plt.xlabel('Number of Cores')
-        plt.ylabel('Speedup')
-        plt.legend(title='Run')
-        plt.tight_layout(rect=[0, 0, 1, 0.97])
-        plt.show()
-        
-        # Plot Efficiency
-        plt.figure(figsize=(10, 5))
-        sns.lineplot(x='Cores', y=f'{timer}_Efficiency', hue='Run', data=df_speedup_efficiency, marker="o")
-        plt.plot(cores, ideal_efficiency, 'k--', label='Ideal Efficiency')
-        plt.title(f'Efficiency ({timer}) vs. Number of Cores')
-        plt.xlabel('Number of Cores')
-        plt.ylabel('Efficiency (%)')
-        plt.legend(title='Run')
-        plt.tight_layout(rect=[0, 0, 1, 0.97])
-        plt.show()
+    x = create_sorted_dictionary(df, timers, cores)
+    get_metrics(x)
+
+

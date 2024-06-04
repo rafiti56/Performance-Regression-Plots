@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+#read core cases and outputs individual lineplots for each metric (efficiency, speedup, wall time)
+
 def get_sorted_files(folder_path, file_pattern):
     # List all files in the given folder
     files = os.listdir(folder_path)
@@ -138,7 +140,7 @@ def plot_speedup(cores, speedup, ideal_speedup ,plot_title):
 
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with the path to your folder
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files_plot_gen'  # Update with the path to your folder
     All_totals = process_files(folder_path)
     
     cores = [4,8,16,32,64]

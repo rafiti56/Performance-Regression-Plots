@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+#outputs wall-clock time by number of cores grouped by timer (Piro, ...)
 def get_sorted_files(folder_path, file_pattern):
     # List all files in the given folder
     files = os.listdir(folder_path)
@@ -179,59 +180,27 @@ if __name__ == "__main__":
     # Create a DataFrame
     df = pd.DataFrame(data_list)
 
-    # Set up the seaborn style
-    sns.set(style="whitegrid")
-
     # Plotting
     categories = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
-    for category in categories:
-        plt.figure(figsize=(10, 5))
-        sns.lineplot(x='Cores', y=category, hue='Run', data=df, marker="o")
-        plt.title(f'{category} vs. Number of Cores')
-        plt.xlabel('Number of Cores')
-        plt.ylabel('Time')
-        plt.legend(title='Run')
-        plt.tight_layout(rect=[0, 0, 1, 0.97])
-        plt.show()
+    fig, axs = plt.subplots(len(categories), 1, figsize=(10, 15))
+    fig.suptitle('Performance Metrics vs. Number of Cores')
 
+    for i, category in enumerate(categories):
+        for run in df['Run'].unique():
+            run_data = df[df['Run'] == run]
+            axs[i].plot(run_data['Cores'], run_data[category], label=f'Run {run}')
+        axs[i].set_title(category)
+        axs[i].set_xlabel('Number of Cores')
+        axs[i].set_ylabel('Time')
+        axs[i].legend()
+
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
     print(df)
-
-    stats = df.groupby('Cores').agg(
-    {
-        'Albany Piro': ['mean', 'std'],
-        'Total Fill Time': ['mean', 'std'],
-        'Precond': ['mean', 'std'],
-        'Total Lin': ['mean', 'std']
-    }
-)
-
-    # Flatten the column hierarchy
-    stats.columns = ['_'.join(col).strip() for col in stats.columns.values]
-
-    # Plot scatter plots with mean and ±3 std deviation lines for each timer
-    timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
-    colors = ['b', 'g', 'r', 'c']
-
-    for core in stats.index:
-        plt.figure(figsize=(12, 8))
-        for i, timer in enumerate(timers):
-            plt.subplot(2, 2, i+1)
-            core_data = df[df['Cores'] == core]
-            plt.scatter(core_data['Run'], core_data[timer], label=f'Core {core}', color=colors[i])
-            mean = stats.loc[core, f'{timer}_mean']
-            std = stats.loc[core, f'{timer}_std']
-            plt.axhline(mean, color='k', linestyle='--', label='Mean')
-            plt.axhline(mean + 3*std, color='r', linestyle='--', label='+3 Std Dev')
-            plt.axhline(mean - 3*std, color='r', linestyle='--', label='-3 Std Dev')
-            plt.title(f'{timer} for Core {core}')
-            plt.xlabel('Run')
-            plt.ylabel(timer)
-            plt.legend()
-            plt.tight_layout()
-
     plt.show()
-        
     
+
+    
+
 
 
 

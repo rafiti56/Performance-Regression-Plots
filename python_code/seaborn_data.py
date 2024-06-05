@@ -63,8 +63,6 @@ def process_files(folder_path):
             results[core][run].append(extracted_timers)
     return results
 
-
-
 def plot_wall_time(ax, cores, actual_comp_time, ideal_times, plot_title):
     df = pd.DataFrame({
         'Cores': cores,
@@ -85,7 +83,6 @@ def plot_wall_time(ax, cores, actual_comp_time, ideal_times, plot_title):
     ax.set_title(plot_title)
     ax.legend()
     
-
 def plot_efficiency(ax, cores,efficiency_actual, ideal_efficiency,plot_title):
     df = pd.DataFrame({
         'Cores': cores,
@@ -104,10 +101,6 @@ def plot_efficiency(ax, cores,efficiency_actual, ideal_efficiency,plot_title):
     ax.set_xscale('log', base =2)
     ax.set_title(plot_title)
     ax.legend() 
-
-
-
-    
 
 def plot_speedup(ax, cores, speedup, ideal_speedup ,plot_title):
     df = pd.DataFrame({
@@ -129,10 +122,6 @@ def plot_speedup(ax, cores, speedup, ideal_speedup ,plot_title):
     ax.set_title(plot_title)
     ax.legend()
     
-
-
-
-
 def create_sorted_dictionary(df, timers, cores):
         timer_values_by_core = {timer: [] for timer in timers}
 
@@ -213,22 +202,23 @@ if __name__ == "__main__":
     )
 
     #groups the dataframe by cores by adding the values for each run and calculating the mean and std deviation for each timer on each core case
-
-    
+    #Indexed by Core, Timers are the column names with subcolums mean and std
+    print(grouped_by_cores)
 
     # create a new list that is sorted by the Column names in grouped_by cores and adds a _ between the timer name and mean/std
     grouped_by_cores.columns = ['_'.join(col).strip() for col in grouped_by_cores.columns.values]
     
-
+    print(grouped_by_cores.columns)
     timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
     colors = ['b', 'g', 'r', 'c']
     #scatterplot
-    #loops through groyuped_by cores indexes which are [4,8,16,32,64]
+    #loops through grouped_by_cores indexes which are [4,8,16,32,64]
     for core in grouped_by_cores.index:
         plt.figure(figsize=(12, 8))
         for i, timer in enumerate(timers):
             plt.subplot(2, 2, i+1)
             core_data = df[df['Cores'] == core]
+            #all core that match the current core in grouped_cores_by_index
             plt.scatter(range(1,len(core_data['Run'])+1), core_data[timer], label=f'{timer}', color=colors[i])
             #sns.scatterplot(x= range(1,len(timers)+1), y=timers, color = 'blue', label = 'Data Points')
             mean = grouped_by_cores.loc[core, f'{timer}_mean']
@@ -305,6 +295,8 @@ for timer in timers:
     plt.errorbar(data = df_final, x ='Cores', y= f'Efficiency {timer}', yerr=0.5, fmt='o', color='black', alpha=0.5)
     plt.xscale('log', base =2 )
     plt.title(f"Efficiency {timer}")
+
+print(df_final)
     
 
 

@@ -141,6 +141,7 @@ def create_sorted_dictionary(df, timers, cores):
             for timer in timers:
                 timer_mean_value = core_group[timer].mean()  # Use mean to get a single value for each core
                 timer_values_by_core[timer].append(timer_mean_value)
+                print(timer_values_by_core)
         return timer_values_by_core
 
 def get_metrics(timer_values_by_core):

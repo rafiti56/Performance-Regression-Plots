@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 #stat analysis library
 import pandas as pd
-#data manipulation library
+#data manipulation 
 import numpy as np
 
-from scipy.stats import t as tdist,  median_abs_deviation as mad
+from scipy.stats import t as tdist,  median_abs_deviation as mad, ttest_1samp as t1
 def get_sorted_files(folder_path, file_pattern):
     #define function get_sorted_file swhich takes folder_path and file_pattern as inputs
     files = os.listdir(folder_path)
@@ -235,6 +235,43 @@ def trimmed_bounds(x, p=.1, alpha=0.01):
     lower = mean - tcrit * stderr
     return mean, lower, upper
 
+def jerry_test(df, timers, cores):
+    for core in cores:
+        core_group = df[df['Cores']== core]
+        for timer in timers:
+            y = core_group[timer]
+            var = trimmed_bounds(y)
+            print(var)
+
+def sci_bounds(x, conf = 0.99):
+    
+        
+        
+        n = len(x)
+        var = tdist.ppf((1 + conf)/2, n-1)
+        std_error = (x.std() / np.sqrt(n))
+        mean = np.mean(x)
+        upper_bound = mean + var*std_error
+        lower_bound = mean - var*std_error
+        return (lower_bound, upper_bound)
+            
+            #print(var)
+
+def tint(df, timer, cores, conf = 0.99):
+    for core in cores:
+        core_group = df[df['Cores'] == core]
+        #for timer in timers:
+        y = core_group[timer]
+        n = len(cores)
+        var = tdist.ppf((1 + conf)/2, n-1)
+        std_error = (y.std() / np.sqrt(n))
+        mean = np.mean(y)
+        tont = tdist.interval(confidence = 0.99, df = n-1, loc = mean, scale =std_error)
+        lower, upper = tont 
+        return lower, upper 
+            
+            #print(var)      
+
 def mads(df, timers, cores):
     
     for core in cores:
@@ -257,9 +294,9 @@ def mads(df, timers, cores):
             plt.ylabel(timer)
             plt.legend()
             plt.tight_layout()
-            print(dev)
+            #print(dev)
 
-    plt.show()
+    #plt.show()
 
 def efficiency(df, timer,cores):
     grouped = df.groupby('Run')
@@ -382,6 +419,13 @@ if __name__ == "__main__":
     
     get_metrics(x)
 
+    jerry_test(df, timers, cores)
+    print('divider')
+    #scitest(df, timers, cores)
+    print('second divider')
+    print(tint(df, timers, cores))
+
+
     #Wall clock-time
     sns.relplot(data = df, x = 'Cores', y = 'Albany Piro', kind ="line", hue = 'Run', errorbar = 'sd')
 
@@ -411,10 +455,10 @@ if __name__ == "__main__":
 
         sns.relplot(data = df_final, x = 'Cores', y = f'Efficiency {timer}', kind ="line",  errorbar = 'sd', marker ='o')
 
-        plt.errorbar(data = df_final, x ='Cores', y= f'Efficiency {timer}', yerr=0.5, fmt='o', color='black', alpha=0.5)
+        #plt.errorbar(data = df_final, x ='Cores', y= f'Efficiency {timer}', yerr=sci_bounds, fmt='o', color='black')
 
         plt.xscale('log', base =2 )
-
+ 
         plt.title(f"Efficiency {timer}")
 
         plt.savefig(f'Efficiency {timer}', dpi =300)
@@ -453,7 +497,11 @@ if __name__ == "__main__":
     """ melts original dataframe in order to create new dataframe dffff which is used for boxplot """
     dfffff = df.melt(id_vars=['Cores', 'Run'], var_name ='Timer', value_name= 'Time')
 
-    sns.catplot(data= dfffff, x = 'Cores', y = 'Time',  col= 'Timer', kind= 'box')
+    sns.catplot(data= dfffff, x = 'Cores', y = 'Time',  col= 'Timer', kind= 'box', showmeans = True, notch = True  )
+
+    #plt.errorbar(data = dfffff, x ='Cores', y= 'Time', yerr=0.5, fmt='o', color='black', alpha = 0.5 )
+
+    plt.savefig(f'Errorbar', dpi = 300)
 
 
     ##################################################################################################################
@@ -474,8 +522,9 @@ if __name__ == "__main__":
 
     gruuu  = grouped_by_cores_2.melt(id_vars= ['Cores'], value_vars= ['Albany Piro_mean', 'Total Fill Time_mean', 'Precond_mean', 'Total Lin_mean' ], var_name = 'Timer', value_name = 'Time')
 
-    sns.catplot(data= gruuu, y = 'Time', hue = 'Timer', col= 'Cores', kind= 'bar')
+    sns.catplot(data= gruuu, y = 'Time', hue = 'Timer', col= 'Cores', kind= 'bar',  errorbar= 'sd')
 
+    plt.savefig(f'Barerror', dpi = 300)
 
 
     ##############################################################################################################################
@@ -484,6 +533,10 @@ if __name__ == "__main__":
     df_eff = df_final.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin'], axis =1 )
     
     eff_melt = df_eff.melt(id_vars=['Cores', 'Run'], var_name = 'Efficiency', value_name = 'Percentage')
+
+    sns.catplot(data= eff_melt, x = 'Cores', y = 'Percentage',  col= 'Efficiency', kind= 'box', whis = False ,errorbar= True)
+    plt.savefig(f'0000000', dpi =300)
+
+
+    ######################################################################################################################################
     
-    sns.catplot(data= eff_melt, x = 'Cores', y = 'Percentage',  col= 'Efficiency', kind= 'box', whis = (0,100), errorbar= True)
-    plt.savefig(f'0000', dpi =300)

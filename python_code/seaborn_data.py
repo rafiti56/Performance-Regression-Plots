@@ -164,7 +164,7 @@ def get_metrics(timer_values_by_core):
             
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with path to folder containing run cases as text files
+    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with path to folder containing run cases as text files
     data = process_files(folder_path)
 
     data_list = []
@@ -375,7 +375,7 @@ plt.show()
 lol =dfffff.set_index('Cores')
 print(lol)
 
-""" for core in dfffff['Cores'].unique():
+for core in dfffff['Cores'].unique():
     lal =lol.loc[lol.index[core]]
 
     for timer in dfffff['Timer'].unique():
@@ -383,7 +383,7 @@ print(lol)
         lul =lal[(lal['Timer']==timer)]
         print(lul)
         sns.boxplot(data= lul,  x = 'Run', y = 'Time', label = f'{timer}' )
-        plt.show()  """
+        plt.show()  
 
 
 

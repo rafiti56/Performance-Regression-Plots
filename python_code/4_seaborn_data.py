@@ -159,7 +159,7 @@ def get_metrics(timer_values_by_core):
             plot_speedup(axes[2] ,cores, speedup, ideal_speedup ,plot_title=f'{key} Speedup')
 
             fig.tight_layout()
-            plt.show()
+            plt.savefig(f'{key} metrics', dpi=300)
                 
             
 
@@ -233,7 +233,7 @@ if __name__ == "__main__":
             plt.legend()
             plt.tight_layout()
 
-    plt.show()
+        plt.savefig(f'{core} cores scatterplot', dpi=300)
 
 
     # Generate ideal values for plotting
@@ -249,8 +249,8 @@ if __name__ == "__main__":
     plt.xscale('log', base = 2)
     
     plt.xticks(cores) 
-
-   # plt.show()
+    plt.savefig(f'Albany Piro Lineplot All Runs')
+   
 
 def efficiency(df, timer,cores):
     grouped = df.groupby('Run')
@@ -295,20 +295,9 @@ for timer in timers:
     plt.errorbar(data = df_final, x ='Cores', y= f'Efficiency {timer}', yerr=0.5, fmt='o', color='black', alpha=0.5)
     plt.xscale('log', base =2 )
     plt.title(f"Efficiency {timer}")
-
-print(df_final)
-    
+    plt.savefig(f'{timer} efficiency shaded ci')
 
 
-
-
-
-
-plt.show()
-#print(df_final)
-
-
-#plt.show()
 
 """ Albany Piro  Total Fill Time   Precond  Total Lin  Cores  Run
 0       35.4208         5.134360  18.10790   12.06220      4    1
@@ -366,38 +355,18 @@ gruuu  = grouped_by_cores_2.melt(id_vars= ['Cores'], value_vars= ['Albany Piro_m
 
 print(gruuu)
 sns.catplot(data= gruuu, y = 'Time', hue = 'Timer', col= 'Cores', kind= 'bar')
+plt.savefig(f'Bar plot timers', dpi=300)
 sns.catplot(data= dfffff, x = 'Cores', y = 'Time',  col= 'Timer', kind= 'box')
+plt.savefig(f'Merged boxplot time', dpi =300)
 #smaller
-plt.show() 
+
+######################################################################################################################################################################################################
 
 
-
-lol =dfffff.set_index('Cores')
-print(lol)
-
-for core in dfffff['Cores'].unique():
-    lal =lol.loc[lol.index[core]]
-
-    for timer in dfffff['Timer'].unique():
-
-        lul =lal[(lal['Timer']==timer)]
-        print(lul)
-        sns.boxplot(data= lul,  x = 'Run', y = 'Time', label = f'{timer}' )
-        plt.show()  
-
-
-
-
-
-        
-
-
-
-   
-
-    #efficiency_actual = [(ideal/actual) *100 for ideal,actual in zip(ideal_times,actual_comp_time) ]
-   # ideal_times.append(base_comp_time/(2**i))
-
-
+#Creates same plots as subplots_by_timer
+#Creates lineplot for albany piro timer showing all hues (Runs)
+#Creates efficiency plots for all timers showing a shaded ci area
+#Creates a figure with 4 plots, one for each timer. for time vs. number of cores
+#Creates a figure with 5 plots, one for each core case (4,8,16,32,64). showing the average time that each timer occupies on different cores
 
 

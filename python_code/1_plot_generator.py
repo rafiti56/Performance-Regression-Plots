@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-#outputs wall-clock time by number of cores grouped by timer (Piro, ...)
+#read core cases and outputs individual lineplots for each metric (efficiency, speedup, wall time)
+
 def get_sorted_files(folder_path, file_pattern):
     # List all files in the given folder
     files = os.listdir(folder_path)
@@ -13,31 +14,24 @@ def get_sorted_files(folder_path, file_pattern):
     matched_files = [f for f in files if re.match(file_pattern, f)]
     
     # Sort files based on numerical order extracted from filenames
-    sorted_files = sorted(matched_files, key=lambda x: (int(re.findall(r'\d+', x)[0]), int(re.findall(r'run(\d+)',x)[0])))
+    sorted_files = sorted(matched_files, key=lambda x: int(re.findall(r'\d+', x)[0]))
     
     return sorted_files
 
 def process_files(folder_path):
     # Define the pattern of the filenames you are looking for
-    file_pattern = r'data_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'data_cores\d+\.txt'  # Adjust the pattern as needed
     
     # Get the sorted list of files
     sorted_files = get_sorted_files(folder_path, file_pattern)
 
-    results = {}
-    run1 =[]
-    run2= []
-    run3=  []
-    run4 = []
-    run5 = []
+    results ={}
+    order = 1
+    extracted_Piro = []
+    extracted_Fill = []
+    extracted_Precond = []
+    extracted_linsolve = []
     
-    run_lists = {
-        1: run1,
-        2: run2,
-        3: run3,
-        4: run4,
-        5: run5
-            }
     # Loop over the sorted files and process them
     for filename in sorted_files:
         file_path = os.path.join(folder_path, filename)
@@ -64,39 +58,21 @@ def process_files(folder_path):
                     extracted_timers[timer_name] = float(timer_value)
                 else:
                     extracted_timers[timer_name] = None
-            # Add the extracted timers to the results dictionary
-            # Remove the file extension
-            filename_no_ext = filename.split(".")[0]
-    
-            # Split the filename into parts
-            parts = filename_no_ext.split("_")
-    
-            # Extract core and run numbers
-            core = int(parts[1].replace("cores", ""))
-            run = int(parts[2].replace("run", ""))
-
-            if core not in results:
-                results[core]= {}
-                
-            if run not in results[core]:
-                results[core][run] = []
-                
-                
-            results[core][run].append(extracted_timers)
+            results[order] = extracted_timers
+            extracted_Piro.append(extracted_timers.get('Albany Piro'))
+            extracted_Fill.append(extracted_timers.get('Total Fill Time'))
+            extracted_Precond.append(extracted_timers.get('Precond'))
+            extracted_linsolve.append(extracted_timers.get('Total Lin'))
             
-            
-    for key, l in results.items():
-        for runs, lists in l.items():
-            run_number = int(runs)
-            run_lists[run_number].append(lists)    
-                    #run_lists[run_number].append(extracted_timers)
+            order += 1
+            #print(extracted_timers)       
+    return {
+        'Total Piro': extracted_Piro,
+        'Total Fill': extracted_Fill,
+        'Total Precond': extracted_Precond,
+        'Total Linear': extracted_linsolve
+    }
 
-    print(run1)
-    print(run2)
-    
-    print(results)
-    
-    return results
 
 def plot_wall_time(cores, actual_comp_time, ideal_times, plot_title):
     df = pd.DataFrame({
@@ -164,45 +140,28 @@ def plot_speedup(cores, speedup, ideal_speedup ,plot_title):
 
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with the path to your folder
-    data = process_files(folder_path)
+    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files_plot_gen'  # Update with the path to your folder
+    All_totals = process_files(folder_path)
     
+    cores = [4,8,16,32,64]
+    ideal_efficiency = [100]*len(cores)
+    print(All_totals)
 
-    # Convert the nested dictionary to a list of dictionaries for easier DataFrame creation
-    data_list = []
-    for cores, runs in data.items():
-        for run, metrics in runs.items():
-            record = metrics[0]
-            record['Cores'] = cores
-            record['Run'] = run
-            data_list.append(record)
+    for key, actual_comp_time in All_totals.items():
+        base_comp_time = actual_comp_time[0]
+        ideal_times = []
+        speedup = []
+        ideal_speedup = []
+        for i in range(len(cores)):
+            ideal_times.append(base_comp_time/(2**i))
+        efficiency_actual = [(ideal/actual) *100 for ideal,actual in zip(ideal_times,actual_comp_time) ]
+        
+        for j in range(len(cores)):
+            speedup.append(base_comp_time/actual_comp_time[j])
+            ideal_speedup.append(base_comp_time/ideal_times[j])
+        plot_efficiency(cores, efficiency_actual, ideal_efficiency, plot_title=f'{key} Efficiency')
+        plot_wall_time(cores, actual_comp_time, ideal_times, plot_title=f'{key} Time')
+        plot_speedup(cores, speedup, ideal_speedup ,plot_title=f'{key} Speedup' )
 
-    # Create a DataFrame
-    df = pd.DataFrame(data_list)
-
-    # Plotting
-    categories = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
-    fig, axs = plt.subplots(len(categories), 1, figsize=(10, 15))
-    fig.suptitle('Performance Metrics vs. Number of Cores')
-
-    for i, category in enumerate(categories):
-        for run in df['Run'].unique():
-            run_data = df[df['Run'] == run]
-            axs[i].plot(run_data['Cores'], run_data[category], label=f'Run {run}')
-        axs[i].set_title(category)
-        axs[i].set_xlabel('Number of Cores')
-        axs[i].set_ylabel('Time')
-        axs[i].legend()
-
-    plt.tight_layout(rect=[0, 0, 1, 0.97])
-    print(df)
-    plt.show()
-    
-
-    
-
-
-
-
-
-
+#needs files to be in format data_cores{num}
+#runs graphs for efficiency, wall_time and speedup for each timer

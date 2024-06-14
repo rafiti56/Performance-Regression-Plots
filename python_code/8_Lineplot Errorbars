@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 #stat analysis library
 import pandas as pd
-#data manipulation library
+#data manipulation 
 import numpy as np
 
-from scipy.stats import t as tdist,  median_abs_deviation as mad
+from scipy.stats import t as tdist,  median_abs_deviation as mad, ttest_1samp as t1
 def get_sorted_files(folder_path, file_pattern):
     #define function get_sorted_file swhich takes folder_path and file_pattern as inputs
     files = os.listdir(folder_path)
@@ -235,6 +235,38 @@ def trimmed_bounds(x, p=.1, alpha=0.01):
     lower = mean - tcrit * stderr
     return mean, lower, upper
 
+def jerry_test(df, timers, cores):
+    for core in cores:
+        core_group = df[df['Cores']== core]
+        for timer in timers:
+            y = core_group[timer]
+            var = trimmed_bounds(y)
+            print(var)
+
+def scitest(y, conf = 0.99):
+    
+            n = len(y)
+            var = tdist.ppf((1 + conf)/2, n-1)
+            std_error = (y.std() / np.sqrt(n))
+            mean = np.mean(y)
+            upper_bound = mean + var*std_error
+            lower_bound = mean - var*std_error
+            return (lower_bound, upper_bound)
+            
+            #print(var)
+
+def tint(y,  conf = 0.99):
+            n = len(y)
+            var = tdist.ppf((1 + conf)/2, n-1)
+            std_error = (y.std() / np.sqrt(n))
+            mean = np.mean(y)
+            tont = tdist.interval(confidence = 0.99, df = n-1, loc = mean, scale =std_error)
+            lower, upper = tont 
+            return lower, upper 
+            
+            #print(var)      
+
+
 def mads(df, timers, cores):
     
     for core in cores:
@@ -257,9 +289,9 @@ def mads(df, timers, cores):
             plt.ylabel(timer)
             plt.legend()
             plt.tight_layout()
-            print(dev)
-
-    plt.show()
+            #print(dev)
+        plt.savefig(f'{core} cores scatterplot mads')
+    #plt.show()
 
 def efficiency(df, timer,cores):
     grouped = df.groupby('Run')
@@ -324,51 +356,6 @@ if __name__ == "__main__":
 #5      25.3387          2.70286  12.2567    10.2876      8    1
 #6      25.3760          2.68414  12.2851    10.3191      8    2 
 
-    """ group = df.groupby('Cores').mean().reset_index()
-    #print(group)
-
-    grouped_by_cores = df.groupby('Cores').agg(
-        {
-            'Albany Piro': ['mean', 'std'],
-            'Total Fill Time': ['mean', 'std'],
-            'Precond': ['mean', 'std'],
-            'Total Lin': ['mean', 'std']
-        }
-    )
-
-    #groups the dataframe by cores by adding the values for each run and calculating the mean and std deviation for each timer on each core case
-    #Indexed by Core, Timers are the column names with subcolums mean and std
-    #print(grouped_by_cores)
-
-    # create a new list that is sorted by the Column names in grouped_by cores and adds a _ between the timer name and mean/std
-    grouped_by_cores.columns = ['_'.join(col).strip() for col in grouped_by_cores.columns.values]
-    
-    #print(grouped_by_cores.columns)
-    
-    #scatterplot
-    #loops through grouped_by_cores indexes which are [4,8,16,32,64]
-    for core in grouped_by_cores.index:
-        plt.figure(figsize=(12, 8))
-        for i, timer in enumerate(timers):
-            plt.subplot(2, 2, i+1)
-            core_data = df[df['Cores'] == core]
-            #all core that match the current core in grouped_cores_by_index
-            plt.scatter(range(1,len(core_data['Run'])+1), core_data[timer], label=f'{timer}', color=colors[i])
-            #sns.scatterplot(x= range(1,len(timers)+1), y=timers, color = 'blue', label = 'Data Points')
-            mean = grouped_by_cores.loc[core, f'{timer}_mean']
-            std = grouped_by_cores.loc[core, f'{timer}_std']
-            plt.axhline(mean, color='k', linestyle='--', label='Mean')
-            plt.axhline(mean + 3 * std, color='r', linestyle='--', label='+3 Std Dev')
-            plt.axhline(mean - 3 * std, color='r', linestyle='--', label='-3 Std Dev')
-            plt.title(f'{timer} for Core {core}')
-            plt.xlabel('Run')
-            plt.xticks(range(1,len(core_data['Run'])+1))
-            plt.ylabel(timer)
-            plt.legend()
-            plt.tight_layout()
-
-    plt.savefig(f'{core}', dpi =300) """
-
     #########################################################################################################################
     """ calls scatterplot with mads function, get metrics calls speedup, eff and wall clock time plots, other plot is for Piro wall time showing each run """
 
@@ -382,6 +369,11 @@ if __name__ == "__main__":
     
     get_metrics(x)
 
+    
+    
+    
+
+
     #Wall clock-time
     sns.relplot(data = df, x = 'Cores', y = 'Albany Piro', kind ="line", hue = 'Run', errorbar = 'sd')
 
@@ -389,7 +381,7 @@ if __name__ == "__main__":
     
     plt.xticks(cores) 
 
-    plt.savefig('Albany Piro wall time', dpi =300)
+    plt.savefig('Albany Piro Lineplot All Runs', dpi =300)
 
 
     #######################################################################################################################
@@ -417,7 +409,7 @@ if __name__ == "__main__":
 
         plt.title(f"Efficiency {timer}")
 
-        plt.savefig(f'Efficiency {timer}', dpi =300)
+        plt.savefig(f'{timer} efficiency shaded ci', dpi =300)
 
     
     """ Albany Piro  Total Fill Time   Precond  Total Lin  Cores  Run
@@ -452,8 +444,12 @@ if __name__ == "__main__":
 
     """ melts original dataframe in order to create new dataframe dffff which is used for boxplot """
     dfffff = df.melt(id_vars=['Cores', 'Run'], var_name ='Timer', value_name= 'Time')
+    
+    sns.catplot(data= dfffff, x = 'Timer', y = 'Time',  col= 'Cores', kind= 'box', showmeans = True, notch = True  )
 
-    sns.catplot(data= dfffff, x = 'Cores', y = 'Time',  col= 'Timer', kind= 'box')
+    #plt.errorbar(data = dfffff, x ='Cores', y= 'Time', yerr=0.5, fmt='o', color='black', alpha = 0.5 )
+
+    plt.savefig(f'Errorbar', dpi = 300)
 
 
     ##################################################################################################################
@@ -474,8 +470,9 @@ if __name__ == "__main__":
 
     gruuu  = grouped_by_cores_2.melt(id_vars= ['Cores'], value_vars= ['Albany Piro_mean', 'Total Fill Time_mean', 'Precond_mean', 'Total Lin_mean' ], var_name = 'Timer', value_name = 'Time')
 
-    sns.catplot(data= gruuu, y = 'Time', hue = 'Timer', col= 'Cores', kind= 'bar')
+    sns.catplot(data= gruuu, y = 'Time', hue = 'Timer', col= 'Cores', kind= 'bar',  errorbar= 'sd')
 
+    plt.savefig(f'Bar plot timers', dpi = 300)
 
 
     ##############################################################################################################################
@@ -485,5 +482,59 @@ if __name__ == "__main__":
     
     eff_melt = df_eff.melt(id_vars=['Cores', 'Run'], var_name = 'Efficiency', value_name = 'Percentage')
     
-    sns.catplot(data= eff_melt, x = 'Cores', y = 'Percentage',  col= 'Efficiency', kind= 'box', whis = (0,100), errorbar= True)
-    plt.savefig(f'0000', dpi =300)
+    sns.catplot(data= eff_melt, x = 'Cores', y = 'Percentage',  col= 'Efficiency', kind= 'box')
+
+    plt.savefig(f'Merged boxplot efficiency', dpi=300)
+   
+    
+    
+    ######################################################################################################################################
+    
+    # Get unique timers and cores
+    unique_timers = dfffff['Timer'].unique()
+    unique_cores = dfffff['Cores'].unique()
+
+    # Reshape t_error to match the number of unique cores and timers
+    #t_error = np.array(t_error).reshape(len(unique_cores), len(unique_timers), 2)
+
+    # Define the offset for error bars
+    offset = 2
+
+    # Loop over each unique timer
+    for i, timer in enumerate(unique_timers):
+        # Filter dataframe for the current timer
+        timer_df = dfffff[dfffff['Timer'] == timer]
+        
+        # Initialize lists to store mean and yerr values
+        means = []
+        yerrs = []
+        
+        # Loop over each unique core
+        for j, core in enumerate(unique_cores):
+            # Filter dataframe for the current core and timer
+            core_timer_df = timer_df[timer_df['Cores'] == core]
+            
+            # Calculate mean value
+            mean = core_timer_df['Time'].mean()
+            
+            # Find the corresponding yerr values
+            #yerr = t_error[j, i]
+            
+            # Append mean and yerr values to lists
+            means.append(mean)
+            #yerrs.append(yerr)
+        
+        # Create the plot
+        
+        sns.catplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'], kind = 'point', errorbar = scitest, capsize = 0.3)
+        
+        # Overlay mean error bars with adjusted x-coordinates
+        #plt.errorbar(x=unique_cores , y=means, yerr=np.array(yerrs).T, color='red', fmt='o', zorder = 100)
+        # Add labels and title
+        plt.xlabel('Cores')
+        plt.ylabel('Time')
+        #plt.xticks(cores)
+        plt.title(f'Point Plot with Mean Error Bars - Timer: {timer}')
+        
+        # Show the plot
+        plt.savefig(f'{timer} lineplot with mean errror bars', dpi =300)

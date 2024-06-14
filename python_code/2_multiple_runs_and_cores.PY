@@ -10,7 +10,7 @@ import pandas as pd
 #data manipulation library
 
 
-#read multiple run files and outputs grouped scatterplots by core and grouped lineplots for each timer on each metric
+#read multiple run files and outputs grouped scatterplots by core and individual lineplots for each metric (efficiency, speedup, wall time)
 
 def get_sorted_files(folder_path, file_pattern):
     #define function get_sorted_file swhich takes folder_path and file_pattern as inputs
@@ -67,7 +67,7 @@ def process_files(folder_path):
 
 
 
-def plot_wall_time(ax, cores, actual_comp_time, ideal_times, plot_title):
+def plot_wall_time(cores, actual_comp_time, ideal_times, plot_title):
     df = pd.DataFrame({
         'Cores': cores,
         'Clock_Time': actual_comp_time,
@@ -78,17 +78,17 @@ def plot_wall_time(ax, cores, actual_comp_time, ideal_times, plot_title):
     sns.set_context("paper")
 
     #Plot clock time
-    
-    sns.lineplot(x = 'Cores', y='Clock_Time', ax = ax, data=df, marker='o', label ='Actual-Time')
-    sns.lineplot(x = 'Cores', y='Ideal_Time', ax = ax, data=df, marker='o', label ='Ideal-Time', linestyle='--')
-    ax.set_xlabel("Core Count")
-    ax.set_ylabel('Wall-Clock-Time')
-    ax.set_xscale('log', base =2)
-    ax.set_title(plot_title)
-    ax.legend()
-    
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x = 'Cores', y='Clock_Time', data=df, marker='o', label ='Actual-Time')
+    sns.lineplot(x = 'Cores', y='Ideal_Time', data=df, marker='o', label ='Ideal-Time', linestyle='--')
+    plt.xlabel("Core Count")
+    plt.ylabel('Wall-Clock-Time')
+    plt.xscale('log', base =2)
+    plt.title(plot_title)
+    plt.legend()
+    plt.savefig(plot_title, dpi =300)
 
-def plot_efficiency(ax, cores,efficiency_actual, ideal_efficiency,plot_title):
+def plot_efficiency(cores,efficiency_actual, ideal_efficiency,plot_title):
     df = pd.DataFrame({
         'Cores': cores,
         'Actual_Efficiency': efficiency_actual,
@@ -99,19 +99,17 @@ def plot_efficiency(ax, cores,efficiency_actual, ideal_efficiency,plot_title):
     sns.set_context("paper")
 
     #Plot efficiency
-    sns.lineplot(x = 'Cores', y='Actual_Efficiency', ax = ax, data=df, marker='o', label ='Actual Efficiency')
-    sns.lineplot(x = 'Cores', y='Ideal_Efficiency', ax = ax, data=df, marker='o', label ='Ideal Efficiency', linestyle='--')
-    ax.set_xlabel("Core Count")
-    ax.set_ylabel('Efficiency')
-    ax.set_xscale('log', base =2)
-    ax.set_title(plot_title)
-    ax.legend() 
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x = 'Cores', y='Actual_Efficiency', data=df, marker='o', label ='Actual Efficiency')
+    sns.lineplot(x = 'Cores', y='Ideal_Efficiency', data=df, marker='o', label ='Ideal Efficiency', linestyle='--')
+    plt.xlabel("Core Count")
+    plt.ylabel('Efficiency')
+    plt.xscale('log', base =2)
+    plt.title(plot_title)
+    plt.legend()
+    plt.savefig(plot_title, dpi =300)
 
-
-
-    
-
-def plot_speedup(ax, cores, speedup, ideal_speedup ,plot_title):
+def plot_speedup(cores, speedup, ideal_speedup ,plot_title):
     df = pd.DataFrame({
         'Cores': cores,
         'Speedup': speedup,
@@ -122,16 +120,15 @@ def plot_speedup(ax, cores, speedup, ideal_speedup ,plot_title):
     sns.set_context("paper")
 
     #Plot speedup
-
-    sns.lineplot(x = 'Cores', y='Speedup', ax = ax, data=df, marker='o', label ='Actual Speedup')
-    sns.lineplot(x = 'Cores', y='Ideal_speedup', ax =ax, data=df, marker='o', label ='Ideal Speedup', linestyle='--')
-    ax.set_xlabel("Core Count")
-    ax.set_ylabel('Speedup')
-    ax.set_xscale('log', base =2)
-    ax.set_title(plot_title)
-    ax.legend()
-    
-
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x = 'Cores', y='Speedup', data=df, marker='o', label ='Actual Speedup')
+    sns.lineplot(x = 'Cores', y='Ideal_speedup', data=df, marker='o', label ='Ideal Speedup', linestyle='--')
+    plt.xlabel("Core Count")
+    plt.ylabel('Speedup')
+    plt.xscale('log', base =2)
+    plt.title(plot_title)
+    plt.legend()
+    plt.savefig(plot_title, dpi =300)
 
 
 
@@ -144,6 +141,7 @@ def create_sorted_dictionary(df, timers, cores):
             for timer in timers:
                 timer_mean_value = core_group[timer].mean()  # Use mean to get a single value for each core
                 timer_values_by_core[timer].append(timer_mean_value)
+                print(timer_values_by_core)
         return timer_values_by_core
 
 def get_metrics(timer_values_by_core):
@@ -161,22 +159,13 @@ def get_metrics(timer_values_by_core):
                 speedup.append(base_comp_time/actual_comp_time[i])
                 ideal_speedup.append(base_comp_time/ideal_times[i])
             efficiency_actual = [(ideal/actual) *100 for ideal,actual in zip(ideal_times,actual_comp_time) ]
-
-            fig, axes = plt.subplots(1,3, figsize=(15,5))
             
-
-            
-            plot_efficiency(axes[0],cores, efficiency_actual, ideal_efficiency, plot_title=f'{key} Efficiency')
-            plot_wall_time(axes[1],cores, actual_comp_time, ideal_times, plot_title=f'{key} Time')
-            plot_speedup(axes[2] ,cores, speedup, ideal_speedup ,plot_title=f'{key} Speedup')
-
-            fig.tight_layout()
-            plt.show()
-                
-            
+            plot_efficiency(cores, efficiency_actual, ideal_efficiency, plot_title=f'{key} Efficiency')
+            plot_wall_time(cores, actual_comp_time, ideal_times, plot_title=f'{key} Time')
+            plot_speedup(cores, speedup, ideal_speedup ,plot_title=f'{key} Speedup' )
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with path to folder containing run cases as text files
+    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files'  # Update with path to folder containing run cases as text files
     data = process_files(folder_path)
 
     data_list = []
@@ -200,8 +189,9 @@ if __name__ == "__main__":
 #3      35.5578          5.15496  18.1484    12.1402      4    4
 #4      35.7281          5.13867  18.2746    12.1920      4    5
 #5      25.3387          2.70286  12.2567    10.2876      8    1
-#6      25.3760          2.68414  12.2851    10.3191      8    2 
-
+#6      25.3760          2.68414  12.2851    10.3191      8    2
+     
+    #############################################################################################################################
 
     grouped_by_cores = df.groupby('Cores').agg(
         {
@@ -218,8 +208,6 @@ if __name__ == "__main__":
 
     # create a new list that is sorted by the Column names in grouped_by cores and adds a _ between the timer name and mean/std
     grouped_by_cores.columns = ['_'.join(col).strip() for col in grouped_by_cores.columns.values]
-
-    print(grouped_by_cores)
     
 
     timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
@@ -244,8 +232,9 @@ if __name__ == "__main__":
             plt.ylabel(timer)
             plt.legend()
             plt.tight_layout()
-
-    plt.show()
+        plt.savefig(f'{core} core mean scatterplot', dpi =300)
+    ################################################################################################################################
+    
 
 
     # Generate ideal values for plotting
@@ -254,6 +243,12 @@ if __name__ == "__main__":
     ideal_efficiency = [100]*len(cores)
 
     x = create_sorted_dictionary(df, timers, cores)
+
+    #Generates individual timer plots 'Timer Name: + Eff/Speed/Time'
     get_metrics(x)
 
+    #takes input files with run and core number and sorts them into dictionary and then dataframe
+    #takes the mean for all runs under core cases and makes lineplot for the mean
+    #creates visual scatter plots that include all data points for each run for each timer. 
+    #each scatterplot figure contains 4 plots for the specified core count, one plot for each timer, shows lines for mean and std deviation for reference 
 

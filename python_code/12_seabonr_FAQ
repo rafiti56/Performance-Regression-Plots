@@ -9,6 +9,7 @@ import seaborn as sns
 import pandas as pd
 #data manipulation 
 import numpy as np
+import seaborn.objects as so
 
 from scipy.stats import t as tdist,  median_abs_deviation as mad, ttest_1samp as t1
 def get_sorted_files(folder_path, file_pattern):
@@ -446,11 +447,29 @@ if __name__ == "__main__":
 
     """ melts original dataframe in order to create new dataframe dffff which is used for boxplot """
     dfffff = df.melt(id_vars=['Cores', 'Run'], var_name ='Timer', value_name= 'Time')
-    sns.catplot(data= dfffff, x = 'Cores', y = 'Time', hue ='Run', col= 'Timer', kind= 'point', errorbar = scitest, capsize = 0.2, sharey= False )
+    """ fig,ax = plt.subplots()
+    sns.relplot(
+    data=dfffff,
+    x='Cores',
+    y='Time',
+    kind ='line',
+    col = 'Timer',
+    dashes=False,
+    err_style='band',
+    errorbar=scitest,
+    ax = ax
+)
+    sns.catplot(data= dfffff, x = 'Cores', y = 'Time', hue ='Run', col= 'Timer', kind= 'point', errorbar = scitest, capsize = 0.2, sharey= False, ax = ax )
+
+    plt.savefig(f'000', dpi =300)
+ """
+    #convert seaborn plots, then plot one by one and overlay
+
+    
 
     #plt.errorbar(data = dfffff, x ='Cores', y= 'Time', yerr=0.5, fmt='o', color='black', alpha = 0.5 )
 
-    plt.savefig(f'Point plot for all timers with errorbars', dpi = 300)
+    plt.savefig(f'Strip plot for all timers with errorbars', dpi = 300)
 
 
     ##################################################################################################################
@@ -526,16 +545,12 @@ if __name__ == "__main__":
             #yerrs.append(yerr)
         
         # Create the plot
-        
-        sns.catplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'], kind = 'point', errorbar = scitest, capsize = 0.3)
-        
-        # Overlay mean error bars with adjusted x-coordinates
-        #plt.errorbar(x=unique_cores , y=means, yerr=np.array(yerrs).T, color='red', fmt='o', zorder = 100)
-        # Add labels and title
+        plt.figure()
+        unique_xs= sorted(timer_df['Cores'].unique())
+        sns.pointplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'], errorbar = scitest, capsize = 0.3)
+        sns.lineplot(data=timer_df, x=timer_df['Cores'].map(unique_xs.index),    y=timer_df['Time'],   dashes=False,    err_style='band',    errorbar=scitest)
         plt.xlabel('Cores')
         plt.ylabel('Time')
         #plt.xticks(cores)
         plt.title(f'Point Plot with Mean Error Bars - Timer: {timer}')
-        
-        # Show the plot
         plt.savefig(f'{timer} lineplot with mean errror bars', dpi =300)

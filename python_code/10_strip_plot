@@ -446,11 +446,21 @@ if __name__ == "__main__":
 
     """ melts original dataframe in order to create new dataframe dffff which is used for boxplot """
     dfffff = df.melt(id_vars=['Cores', 'Run'], var_name ='Timer', value_name= 'Time')
-    sns.catplot(data= dfffff, x = 'Cores', y = 'Time', hue ='Run', col= 'Timer', kind= 'point', errorbar = scitest, capsize = 0.2, sharey= False )
+    sns.relplot(
+    data=dfffff,
+    x='Cores',
+    y='Time',
+    kind ='line',
+    col = 'Timer',
+    dashes=False,
+    err_style='band',
+    errorbar=scitest
+)
+
 
     #plt.errorbar(data = dfffff, x ='Cores', y= 'Time', yerr=0.5, fmt='o', color='black', alpha = 0.5 )
 
-    plt.savefig(f'Point plot for all timers with errorbars', dpi = 300)
+    plt.savefig(f'Strip plot for all timers with errorbars', dpi = 300)
 
 
     ##################################################################################################################

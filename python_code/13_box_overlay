@@ -506,6 +506,7 @@ if __name__ == "__main__":
     sns.catplot(data= eff_melt, x = 'Cores', y = 'Percentage',  col= 'Efficiency', kind= 'box')
 
     plt.savefig(f'Merged boxplot efficiency', dpi=300)
+    print(eff_melt)
     
     
     
@@ -531,7 +532,7 @@ if __name__ == "__main__":
         yerrs = []
         
         # Loop over each unique core
-        for j, core in enumerate(unique_cores):
+        """  for j, core in enumerate(unique_cores):
             # Filter dataframe for the current core and timer
             core_timer_df = timer_df[timer_df['Cores'] == core]
             
@@ -543,28 +544,32 @@ if __name__ == "__main__":
             
             # Append mean and yerr values to lists
             means.append(mean)
-            #yerrs.append(yerr)
+            #yerrs.append(yerr) """
         
         # Create the plot
         plt.figure()
         unique_xs= sorted(timer_df['Cores'].unique())
-        sns.scatterplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'])
-        sns.lineplot(data=timer_df, x=timer_df['Cores'],    y=timer_df['Time'],   dashes=False,    err_style='band',    errorbar=scitest)
+        sns.pointplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df, x=timer_df['Cores'],    y=timer_df['Time'], showcaps= False, linewidth= 0.5, color= 'red')
         plt.xlabel('Cores')
         plt.ylabel('Time')
-        
-        
-        plt.xscale('log', base =2)  # Set x-axis to log scale
-          # Set y-axis to log scale if needed
+        plt.title(f'Box Plot with Mean Error Bars - Timer: {timer}')
+        plt.savefig(f'{timer} Boxplot with mean errror bars', dpi =300)
 
-        
+       
+    unique_effs = eff_melt['Efficiency'].unique()
 
-        
-
-        # Set the tick locations and labels
-        
-
-
-
-        plt.title(f'Point Plot with Mean Error Bars - Timer: {timer}')
-        plt.savefig(f'{timer} lineplot with mean errror bars', dpi =300)
+    for i, timer in enumerate(unique_effs):
+        # Filter dataframe for the current timer
+        eff_df = eff_melt[eff_melt['Efficiency'] == timer]
+                
+        # Create the plot
+        plt.figure()
+        unique_xs= sorted(eff_df['Cores'].unique())
+        sns.pointplot( data=eff_df, x=eff_df['Cores'], y=eff_df['Percentage'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
+        sns.boxplot(data=eff_df, x=eff_df['Cores'],    y=eff_df['Percentage'], showcaps= False, linewidth= 0.5, color= 'red')
+        plt.xlabel('Cores')
+        plt.ylabel('Percentage')
+        plt.title(f'Box Plot with Mean Error Bars - Efficiency: {timer}')
+        plt.savefig(f'Efficiency {timer} Boxplot with mean errror bars', dpi =300)
+        #sns.catplot(data= eff_melt, x = 'Cores', y = 'Percentage',  col= 'Efficiency', kind= 'box')

@@ -560,14 +560,22 @@ if __name__ == "__main__":
             
         for i in range(len(cores)):
             
-            ideal_times.append(base_comp_time/(2**i))
+            ideal_times.append(base_time/(2**i))
+
+        ideal_time_df = pd.DataFrame(
+             {
+                  'Cores': cores,
+                  'Ideal Times': ideal_times 
+
+             }
+        )
         
         # Create the plot
         plt.figure()
         unique_xs= sorted(timer_df['Cores'].unique())
         sns.pointplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
         sns.boxplot(data=timer_df, x=timer_df['Cores'],    y=timer_df['Time'], showcaps= False, linewidth= 0.5, color= 'red', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-        #sns.lineplot(x = 'Cores', y='Ideal_Time' data=df, marker='o', label ='Ideal-Time', linestyle='--')
+        sns.pointplot(data = ideal_time_df, x = 'Cores', y='Ideal Times', marker='o', label ='Ideal-Time', linestyle='--')
         plt.xlabel('Nodes')
         plt.ylabel('Wall-clock time')
         plt.title(f'Timer: {timer}')

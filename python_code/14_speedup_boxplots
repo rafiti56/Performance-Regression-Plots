@@ -332,7 +332,7 @@ def speedup(df, timer):
 
 if __name__ == "__main__":
 
-    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files'  
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files_gpu_perlmutter'  
     # Update with path to folder containing run cases as text files
 
     data = process_files(folder_path)
@@ -555,14 +555,22 @@ if __name__ == "__main__":
             means.append(mean)
             #yerrs.append(yerr) """
         
+        base_time = timer_df['Time'].to_numpy()[0]
+        ideal_times = []
+            
+        for i in range(len(cores)):
+            
+            ideal_times.append(base_comp_time/(2**i))
+        
         # Create the plot
         plt.figure()
         unique_xs= sorted(timer_df['Cores'].unique())
         sns.pointplot( data=timer_df, x=timer_df['Cores'], y=timer_df['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df, x=timer_df['Cores'],    y=timer_df['Time'], showcaps= False, linewidth= 0.5, color= 'red')
-        plt.xlabel('Cores')
-        plt.ylabel('Time')
-        plt.title(f'Box Plot with Mean Error Bars - Timer: {timer}')
+        sns.boxplot(data=timer_df, x=timer_df['Cores'],    y=timer_df['Time'], showcaps= False, linewidth= 0.5, color= 'red', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        #sns.lineplot(x = 'Cores', y='Ideal_Time' data=df, marker='o', label ='Ideal-Time', linestyle='--')
+        plt.xlabel('Nodes')
+        plt.ylabel('Wall-clock time')
+        plt.title(f'Timer: {timer}')
         plt.savefig(f'{timer} Boxplot with mean errror bars', dpi =300)
 
        
@@ -576,7 +584,7 @@ if __name__ == "__main__":
         plt.figure()
         unique_xs= sorted(eff_df['Cores'].unique())
         sns.pointplot( data=eff_df, x=eff_df['Cores'], y=eff_df['Percentage'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
-        sns.boxplot(data=eff_df, x=eff_df['Cores'],    y=eff_df['Percentage'], showcaps= False, linewidth= 0.5, color= 'red')
+        sns.boxplot(data=eff_df, x=eff_df['Cores'],    y=eff_df['Percentage'], showcaps= False, linewidth= 0.5, color= 'red',whis=(0,100),showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
         plt.xlabel('Cores')
         plt.ylabel('Percentage')
         plt.title(f'Box Plot with Mean Error Bars - Efficiency: {timer}')
@@ -613,7 +621,7 @@ if __name__ == "__main__":
         plt.figure()
         unique_xs= sorted(sp_df['Cores'].unique())
         sns.pointplot( data=sp_df, x=sp_df['Cores'], y=sp_df['Scale'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
-        sns.boxplot(data=sp_df, x=sp_df['Cores'],    y=sp_df['Scale'], showcaps= False, linewidth= 0.5, color= 'red')
+        sns.boxplot(data=sp_df, x=sp_df['Cores'],    y=sp_df['Scale'], showcaps= False, linewidth= 0.5, color= 'red', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
         plt.xlabel('Cores')
         plt.ylabel('Scale')
         plt.title(f'Box Plot with Mean Error Bars - Speedup: {timer}')

@@ -357,7 +357,7 @@ if __name__ == "__main__":
     # Convert the list to a DataFrame
     df = pd.DataFrame(data_list)
 
-    print(df)
+    
 
     # Now df contains the combined data from both datasets with an additional 'Dataset' column to distinguish them
     
@@ -365,7 +365,11 @@ if __name__ == "__main__":
     df_frontier = df[df['Dataset'] == 'frontier']
 
     df_perl = df[df['Dataset'] == 'perl']
+
+    altered_frontier = df_frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_perl = df_perl.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     
+    print(altered_frontier)
 
     timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
 
@@ -409,21 +413,20 @@ if __name__ == "__main__":
             })
     mean_df = pd.DataFrame(mean_list)
 
-    print(mean_df)
+   
     
 
-    altered_frontier = df_frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    altered_perl = df_perl.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    
 
     
     
-    altered_frontier['Timer_front'] = altered_frontier['Time']
+    """  altered_frontier['Timer_front'] = altered_frontier['Time']
     merge_df = altered_frontier
     merge_df['Timer_perl']  = altered_perl['Time']
     merge_df['Time'] = merge_df['Timer_perl'] - merge_df['Timer_front'] 
-    difference = merge_df.drop(columns=['Timer_front', 'Timer_perl', 'Dataset'])
+    difference = merge_df.drop(columns=['Timer_front', 'Timer_perl', 'Dataset']) """
 
-    sci_list = []
+    """  sci_list = []
 
     for core in cores:
         sci_cores = difference[difference['Cores'] == core]
@@ -439,7 +442,7 @@ if __name__ == "__main__":
                 'Bounds': (ll,ul)
                 
             })
-    sci_df = pd.DataFrame(sci_list)
+    sci_df = pd.DataFrame(sci_list) """
 
 
     unique_timers = altered_frontier['Timer'].unique()
@@ -459,6 +462,7 @@ if __name__ == "__main__":
         sns.pointplot( data=timer_df_perl, x=timer_df_perl['Cores'], y=timer_df_perl['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
         sns.boxplot(data=timer_df_perl, x=timer_df_perl['Cores'],    y=timer_df_perl['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'Perl' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
 
+        
 
         for core in cores:
 
@@ -482,5 +486,6 @@ if __name__ == "__main__":
         plt.xlabel('Nodes')
         plt.ylabel('Wall-clock time')
         plt.legend()
+        plt.ylim(ymin = 0)
         plt.title(f'Timer: {timer}')
         plt.savefig(f'{timer} Boxplot with mean errror bars', dpi =300)

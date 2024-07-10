@@ -10,7 +10,7 @@ import pandas as pd
 #data manipulation 
 import numpy as np
 import seaborn.objects as so
-
+import pandas.plotting as table
 from scipy.stats import t as tdist,  median_abs_deviation as mad, ttest_1samp as t1
 
 def get_sorted_files(folder_path, file_pattern):
@@ -197,6 +197,19 @@ def trimmed_ttest(x, y=None, with_pval=True):
     pval = 2*tdist.cdf(-np.abs(tstat), n-2)
     return (tstat, pval) if with_pval else tstat
 
+
+def scitest(y, conf = 0.99):
+    
+            n = len(y)
+            var = tdist.ppf((1 + conf)/2, n-1)
+            std_error = (y.std() / np.sqrt(n))
+            mean = np.mean(y)
+            upper_bound = mean + var*std_error
+            lower_bound = mean - var*std_error
+            return (lower_bound, upper_bound)
+            
+            #print(var)
+
 class res:
     def __init__(self, folder_path, file_pattern):
         self.folder_path =folder_path
@@ -296,8 +309,30 @@ def jerry_test(df, timers, cores):
             var = trimmed_bounds(y)
             print(var)
 
+
+def trimmed_ttest_bounds(x, y, p=.1, alpha=0.01, num_tests=1):
+    '''
+    Get confidence interval for the difference between means
+    '''
+    
+    xmean, xvar = trimmed_stats(x, p, var=True)
+    n = len(x)
+    
+    ymean, yvar = trimmed_stats(y, p, var=True)
+    m = len(y)
+
+    rss = (n-1)*xvar + (m-1)*yvar
+    sigma = np.sqrt(rss/(n+m-2)) + 1e-8
+    stderr = sigma / np.sqrt(n*m/(n+m))
+    #tstat = np.sqrt(n*m/(n+m))*(ymean-xmean)/sigma
+    tcrit = tdist.isf(alpha/(2*num_tests), df=n+m-2)
+    meandiff = xmean-ymean
+    upper = meandiff + tcrit * stderr
+    lower = meandiff - tcrit * stderr
+    return meandiff, lower, upper
+
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\frontier_vs_perl'
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\frontier_vs_perl_text'
 
 
 
@@ -322,6 +357,8 @@ if __name__ == "__main__":
     # Convert the list to a DataFrame
     df = pd.DataFrame(data_list)
 
+    print(df)
+
     # Now df contains the combined data from both datasets with an additional 'Dataset' column to distinguish them
     
 
@@ -335,16 +372,9 @@ if __name__ == "__main__":
     #cores = sorted(df['Cores'].unique())
     cores = [4,8,16,32,64]
 
-    print(df)
 
+    tstat_list = []
 
-    
-
-
-    altered_frontier = df_frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    altered_perl = df_perl.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    unique_timers = altered_frontier['Timer'].unique()
-    home = []
     for core in cores:
         
         core_group_frontier = df_frontier[df_frontier['Cores']== core]
@@ -353,7 +383,104 @@ if __name__ == "__main__":
         for timer in timers:
 
             tstat, pval= trimmed_ttest(core_group_frontier[timer], core_group_perl[timer], with_pval=True)
-            print(tstat, pval)
+            tstat_list.append({
+                'Cores': core,
+                'Timer': timer,
+                'Tstat': tstat,
+                'Pval': pval,
+            })
+    tstat_df = pd.DataFrame(tstat_list)
+##################################################################################################
+    mean_list = []
+
+    for core in cores:
+        
+        core_group_frontier = df_frontier[df_frontier['Cores']== core]
+        core_group_perl = df_perl[df_perl['Cores']== core]
+
+        for timer in timers:
+
+            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_perl[timer]), np.log(core_group_frontier[timer]))
+            mean_list.append({
+                'Cores': core,
+                'Timer': timer,
+                'Mean Difference': log_mean,
+                'Bounds': (log_lower,log_upper)
+            })
+    mean_df = pd.DataFrame(mean_list)
+
+    print(mean_df)
+    
+
+    altered_frontier = df_frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_perl = df_perl.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+
+    
+    
+    altered_frontier['Timer_front'] = altered_frontier['Time']
+    merge_df = altered_frontier
+    merge_df['Timer_perl']  = altered_perl['Time']
+    merge_df['Time'] = merge_df['Timer_perl'] - merge_df['Timer_front'] 
+    difference = merge_df.drop(columns=['Timer_front', 'Timer_perl', 'Dataset'])
+
+    sci_list = []
+
+    for core in cores:
+        sci_cores = difference[difference['Cores'] == core]
+        
+
+        for timer in timers:
+            sci_time = (sci_cores[sci_cores['Timer'] == timer ])
+            ll, ul = scitest(sci_time['Time'])
+            sci_list.append({
+                'Cores': core,
+                'Timer': timer,
+                'Difference': sci_time['Time'].mean(),
+                'Bounds': (ll,ul)
+                
+            })
+    sci_df = pd.DataFrame(sci_list)
+
+
+    unique_timers = altered_frontier['Timer'].unique()
+
+    for i, timer in enumerate(unique_timers):
+        # Filter dataframe for the current timer
+        timer_df_frontier = altered_frontier[altered_frontier['Timer'] == timer]
+        timer_df_perl = altered_perl[altered_perl['Timer'] == timer]
+
+        
+        plt.figure()
+        unique_sorted_frontier= sorted(timer_df_frontier['Cores'].unique())
+        #Frontier
+        sns.pointplot( data=timer_df_frontier, x=timer_df_frontier['Cores'], y=timer_df_frontier['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_frontier, x=timer_df_frontier['Cores'],    y=timer_df_frontier['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'Frontier', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        #Perl
+        sns.pointplot( data=timer_df_perl, x=timer_df_perl['Cores'], y=timer_df_perl['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_perl, x=timer_df_perl['Cores'],    y=timer_df_perl['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'Perl' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+
+
+        for core in cores:
+
+            core_df = mean_df[mean_df['Cores'] ==core]
+
+            sci_timer = mean_df[mean_df['Timer'] == timer]
+            table_data = sci_timer[['Cores', 'Mean Difference', 'Bounds']].copy()
+            table_data['Bounds'] = table_data['Bounds'].apply(lambda x: f'({np.exp(x[0]):.2f}, {np.exp(x[1]):.2f})')
+            table_data['Mean Difference'] = table_data['Mean Difference'].apply(lambda x: f'{np.exp(x):.2f}')
             
-            home.append(tstat)
-    print(len(home))
+          
+            table_data = table_data.values
+
+        col_labels = ["Nodes", 'Frontier Speedup' , "99% CI: (LL, UL)" ]
+        table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5])
+
+
+        plt.subplots_adjust(bottom=0.4)
+
+        #sns.pointplot(data = ideal_time_df, x = 'Cores', y='Ideal Times', marker='o', label ='Ideal-Time', linestyle='--')
+        plt.xlabel('Nodes')
+        plt.ylabel('Wall-clock time')
+        plt.legend()
+        plt.title(f'Timer: {timer}')
+        plt.savefig(f'{timer} Boxplot with mean errror bars', dpi =300)

@@ -1,3 +1,4 @@
+
 import os 
 #Import os interacts with the operating system, used for file operations
 import re
@@ -24,10 +25,9 @@ def get_sorted_files(folder_path, file_pattern):
     return sorted_files
 
 
-def process_file1(folder_path):
+def process_files_frontier(folder_path):
     #specifies file pattern
-    #change to text_file pattern
-    file_pattern = r'Old_Input_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'frontier_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
     results_front = {}
@@ -69,13 +69,12 @@ def process_file1(folder_path):
     #print(results_front)
     return results_front
 
-def process_files2(folder_path):
+def process_files_perl(folder_path):
     #specifies file pattern
-    #change to text_file pattern
-    file_pattern = r'New_Input_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'perl_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
-    results_New_Input = {}
+    results_perl = {}
     
     for filename in sorted_files:
         #for each filename in sorted_files (loops through each item on the list)
@@ -100,19 +99,19 @@ def process_files2(folder_path):
 
             parts = filename_no_ext.split("_")
             #splits filename into 3 parts data - cores4 -run1
-            core = int(parts[2].replace("cores", ""))
+            core = int(parts[1].replace("cores", ""))
             #gets rid of "cores" and converts remaining number string to an integer
-            run = int(parts[3].replace("run", ""))
+            run = int(parts[2].replace("run", ""))
             #gets rid of "runs" and converts remaining number string to an integer
-            if core not in results_New_Input:
+            if core not in results_perl:
                 #Add core as a key in the dictionary if not there
-                results_New_Input[core] = {}
-            if run not in results_New_Input[core]:
+                results_perl[core] = {}
+            if run not in results_perl[core]:
                 #Adds run as a nested dictionary under core key and creates and empty list to append the extracted timer values from the file (Piro, Albany, FIll, linsonve)
-                results_New_Input[core][run] = []
-            results_New_Input[core][run].append(extracted_timers)
+                results_perl[core][run] = []
+            results_perl[core][run].append(extracted_timers)
     #print(results_front)
-    return results_New_Input
+    return results_perl
 
 def trim(x, p=.1, threshold=3, outliers=False):
     '''
@@ -338,22 +337,22 @@ if __name__ == "__main__":
 
 
 
-    data_Old_Input = res(folder_path, r'old_cpu_cores\d+_run\d+')
+    data_frontier = res(folder_path, r'old_cpu_cores\d+_run\d+')
 
-    data_New_Input = res(folder_path, r'new_cpu_cores\d+_run\d+')
+    data_perl = res(folder_path, r'new_cpu_cores\d+_run\d+')
 
-    data_Old_Input.process_files()
+    data_frontier.process_files()
 
-    data_New_Input.process_files()
+    data_perl.process_files()
 
     
 
 
     data_list =[]
 
-    #Change labeling
-    process_data(data_Old_Input.results, 'Old_Input')
-    process_data(data_New_Input.results, 'New_Input')
+    # Process each dataset
+    process_data(data_frontier.results, 'frontier')
+    process_data(data_perl.results, 'perl')
 
     
     # Convert the list to a DataFrame
@@ -364,14 +363,14 @@ if __name__ == "__main__":
     # Now df contains the combined data from both datasets with an additional 'Dataset' column to distinguish them
     
 
-    df_Old_Input = df[df['Dataset'] == 'Old_Input']
+    df_frontier = df[df['Dataset'] == 'frontier']
 
-    df_New_Input = df[df['Dataset'] == 'New_Input']
+    df_perl = df[df['Dataset'] == 'perl']
 
-    altered_Old_Input = df_Old_Input.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    altered_New_Input = df_New_Input.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_frontier = df_frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_perl = df_perl.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     
-    print(altered_Old_Input)
+    print(altered_frontier)
 
     timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
 
@@ -383,12 +382,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_Old_Input = df_Old_Input[df_Old_Input['Cores']== core]
-        core_group_New_Input = df_New_Input[df_New_Input['Cores']== core]
+        core_group_frontier = df_frontier[df_frontier['Cores']== core]
+        core_group_perl = df_perl[df_perl['Cores']== core]
 
         for timer in timers:
 
-            tstat, pval= trimmed_ttest(core_group_Old_Input[timer], core_group_New_Input[timer], with_pval=True)
+            tstat, pval= trimmed_ttest(core_group_frontier[timer], core_group_perl[timer], with_pval=True)
             tstat_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -401,12 +400,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_Old_Input = df_Old_Input[df_Old_Input['Cores']== core]
-        core_group_New_Input = df_New_Input[df_New_Input['Cores']== core]
+        core_group_frontier = df_frontier[df_frontier['Cores']== core]
+        core_group_perl = df_perl[df_perl['Cores']== core]
 
         for timer in timers:
 
-            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_New_Input[timer]), np.log(core_group_Old_Input[timer]))
+            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_perl[timer]), np.log(core_group_frontier[timer]))
             mean_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -422,11 +421,11 @@ if __name__ == "__main__":
 
     
     
-    """  altered_Old_Input['Timer_front'] = altered_Old_Input['Time']
-    merge_df = altered_Old_Input
-    merge_df['Timer_New_Input']  = altered_New_Input['Time']
-    merge_df['Time'] = merge_df['Timer_New_Input'] - merge_df['Timer_front'] 
-    difference = merge_df.drop(columns=['Timer_front', 'Timer_New_Input', 'Dataset']) """
+    """  altered_frontier['Timer_front'] = altered_frontier['Time']
+    merge_df = altered_frontier
+    merge_df['Timer_perl']  = altered_perl['Time']
+    merge_df['Time'] = merge_df['Timer_perl'] - merge_df['Timer_front'] 
+    difference = merge_df.drop(columns=['Timer_front', 'Timer_perl', 'Dataset']) """
 
     """  sci_list = []
 
@@ -447,22 +446,22 @@ if __name__ == "__main__":
     sci_df = pd.DataFrame(sci_list) """
 
 
-    unique_timers = altered_Old_Input['Timer'].unique()
+    unique_timers = altered_frontier['Timer'].unique()
 
     for i, timer in enumerate(unique_timers):
         # Filter dataframe for the current timer
-        timer_df_Old_Input = altered_Old_Input[altered_Old_Input['Timer'] == timer]
-        timer_df_New_Input = altered_New_Input[altered_New_Input['Timer'] == timer]
+        timer_df_frontier = altered_frontier[altered_frontier['Timer'] == timer]
+        timer_df_perl = altered_perl[altered_perl['Timer'] == timer]
 
         
         plt.figure()
-        unique_sorted_Old_Input= sorted(timer_df_Old_Input['Cores'].unique())
-        #Old_Input
-        sns.pointplot( data=timer_df_Old_Input, x=timer_df_Old_Input['Cores'], y=timer_df_Old_Input['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_Old_Input, x=timer_df_Old_Input['Cores'],    y=timer_df_Old_Input['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'Old_Input', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-        #New_Input
-        sns.pointplot( data=timer_df_New_Input, x=timer_df_New_Input['Cores'], y=timer_df_New_Input['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_New_Input, x=timer_df_New_Input['Cores'],    y=timer_df_New_Input['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'New_Input' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        unique_sorted_frontier= sorted(timer_df_frontier['Cores'].unique())
+        #Frontier
+        sns.pointplot( data=timer_df_frontier, x=timer_df_frontier['Cores'], y=timer_df_frontier['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_frontier, x=timer_df_frontier['Cores'],    y=timer_df_frontier['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'Frontier', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        #Perl
+        sns.pointplot( data=timer_df_perl, x=timer_df_perl['Cores'], y=timer_df_perl['Time'], errorbar = scitest, capsize = 0.3, errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_perl, x=timer_df_perl['Cores'],    y=timer_df_perl['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'Perl' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
 
         
 
@@ -478,7 +477,7 @@ if __name__ == "__main__":
           
             table_data = table_data.values
 
-        col_labels = ["Nodes", 'Old_Input Speedup' , "99% CI: (LL, UL)" ]
+        col_labels = ["Nodes", 'Frontier Speedup' , "99% CI: (LL, UL)" ]
         table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5])
 
 

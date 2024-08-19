@@ -332,7 +332,7 @@ def speedup(df, timer):
 
 if __name__ == "__main__":
 
-    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files_cpu_perlmutter'  
+    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files\text_files_cpu_perlmutter'  
     # Update with path to folder containing run cases as text files
 
     data = process_files(folder_path)

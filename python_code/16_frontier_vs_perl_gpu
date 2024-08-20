@@ -27,7 +27,7 @@ def get_sorted_files(folder_path, file_pattern):
 def process_file1(folder_path):
     #specifies file pattern
     #change to text_file pattern
-    file_pattern = r'OpenMP_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'Perlmutter_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
     results_front = {}
@@ -74,10 +74,10 @@ def process_file1(folder_path):
 def process_files2(folder_path):
     #specifies file pattern
     #change to text_file pattern
-    file_pattern = r'MPI_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'Frontier_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
-    results_MPI = {}
+    results_Frontier = {}
     
     for filename in sorted_files:
         #for each filename in sorted_files (loops through each item on the list)
@@ -106,15 +106,15 @@ def process_files2(folder_path):
             #gets rid of "cores" and converts remaining number string to an integer
             run = int(parts[2].replace("run", ""))
             #gets rid of "runs" and converts remaining number string to an integer
-            if core not in results_MPI:
+            if core not in results_Frontier:
                 #Add core as a key in the dictionary if not there
-                results_MPI[core] = {}
-            if run not in results_MPI[core]:
+                results_Frontier[core] = {}
+            if run not in results_Frontier[core]:
                 #Adds run as a nested dictionary under core key and creates and empty list to append the extracted timer values from the file (Piro, Albany, FIll, linsonve)
-                results_MPI[core][run] = []
-            results_MPI[core][run].append(extracted_timers)
+                results_Frontier[core][run] = []
+            results_Frontier[core][run].append(extracted_timers)
     #print(results_front)
-    return results_MPI
+    return results_Frontier
 
 def trim(x, p=.1, threshold=3, outliers=False):
     '''
@@ -355,17 +355,17 @@ def efficiency(df, timer,cores):
     return efficiency_actual
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files\OPMPI_vs_MPI_only_text'
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files\perl_vs_frontier_uvmfree'
 
 
 
-    data_MPI = res(folder_path, r'MPI_cores\d+_run\d+')
+    data_Frontier = res(folder_path, r'frontier_cores\d+_run\d+')
 
-    data_OpenMP = res(folder_path, r'OP_cores\d+_run\d+')
+    data_Perlmutter = res(folder_path, r'perlmutter_cores\d+_run\d+')
 
-    data_OpenMP.process_files()
+    data_Perlmutter.process_files()
 
-    data_MPI.process_files()
+    data_Frontier.process_files()
 
     
 
@@ -373,8 +373,8 @@ if __name__ == "__main__":
     data_list =[]
 
     #Change labeling
-    process_data(data_OpenMP.results, 'OpenMP')
-    process_data(data_MPI.results, 'MPI')
+    process_data(data_Perlmutter.results, 'Perlmutter')
+    process_data(data_Frontier.results, 'Frontier')
 
     
     # Convert the list to a DataFrame
@@ -421,12 +421,12 @@ if __name__ == "__main__":
 
 
 
-    df_OpenMP = df[df['Dataset'] == 'OpenMP']
+    df_Perlmutter = df[df['Dataset'] == 'Perlmutter']
 
-    df_MPI = df[df['Dataset'] == 'MPI']
+    df_Frontier = df[df['Dataset'] == 'Frontier']
 
-    altered_OpenMP = df_OpenMP.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    altered_MPI = df_MPI.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_Perlmutter = df_Perlmutter.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_Frontier = df_Frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     
     
 
@@ -438,50 +438,50 @@ if __name__ == "__main__":
     cores = [4,8,16,32,64]
 
     #efficiency
-    efficiency_df_OpenMP = pd.DataFrame()
-    efficiency_df_MPI = pd.DataFrame()
+    efficiency_df_Perlmutter = pd.DataFrame()
+    efficiency_df_Frontier = pd.DataFrame()
 
     print(df.columns)
     for timer in timers:
             
             
-            eff_OpenMP = efficiency(df_OpenMP, timer,cores)
-            eff_MPI = efficiency(df_MPI, timer,cores)
+            eff_Perlmutter = efficiency(df_Perlmutter, timer,cores)
+            eff_Frontier = efficiency(df_Frontier, timer,cores)
         
-            efficiency_df_OpenMP[f"Efficiency {timer}"] = eff_OpenMP
-            efficiency_df_MPI[f"Efficiency {timer}"] = eff_MPI
+            efficiency_df_Perlmutter[f"Efficiency {timer}"] = eff_Perlmutter
+            efficiency_df_Frontier[f"Efficiency {timer}"] = eff_Frontier
 
             
-            df_sorted_OpenMP = df_OpenMP.sort_values(by=['Run', 'Cores', ]) 
+            df_sorted_Perlmutter = df_Perlmutter.sort_values(by=['Run', 'Cores', ]) 
             #########################
-            df_sorted_MPI = df_MPI.sort_values(by=['Run', 'Cores', ]) 
+            df_sorted_Frontier = df_Frontier.sort_values(by=['Run', 'Cores', ]) 
 
-            df_final_OpenMP = pd.concat([df_sorted_OpenMP.reset_index(drop=True), efficiency_df_OpenMP.reset_index(drop=True)], axis=1)
-            df_final_MPI = pd.concat([df_sorted_MPI.reset_index(drop=True), efficiency_df_MPI.reset_index(drop=True)], axis=1)
-    print(df_final_OpenMP)
-    df_eff_OpenMP = df_final_OpenMP.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+            df_final_Perlmutter = pd.concat([df_sorted_Perlmutter.reset_index(drop=True), efficiency_df_Perlmutter.reset_index(drop=True)], axis=1)
+            df_final_Frontier = pd.concat([df_sorted_Frontier.reset_index(drop=True), efficiency_df_Frontier.reset_index(drop=True)], axis=1)
+    print(df_final_Perlmutter)
+    df_eff_Perlmutter = df_final_Perlmutter.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
-    eff_melt_OpenMP = df_eff_OpenMP.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
+    eff_melt_Perlmutter = df_eff_Perlmutter.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
 
-    df_eff_MPI = df_final_MPI.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+    df_eff_Frontier = df_final_Frontier.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
-    eff_melt_MPI = df_eff_MPI.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
+    eff_melt_Frontier = df_eff_Frontier.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
-    print(eff_melt_OpenMP)
+    print(eff_melt_Perlmutter)
 
-    unique_effs = eff_melt_OpenMP['Efficiency'].unique()
+    unique_effs = eff_melt_Perlmutter['Efficiency'].unique()
 
     for i, timer in enumerate(unique_effs):
-        eff_df_MPI = eff_melt_MPI[eff_melt_OpenMP['Efficiency'] == timer]
-        eff_df_OpenMP = eff_melt_OpenMP[eff_melt_OpenMP['Efficiency'] == timer]
+        eff_df_Frontier = eff_melt_Frontier[eff_melt_Perlmutter['Efficiency'] == timer]
+        eff_df_Perlmutter = eff_melt_Perlmutter[eff_melt_Perlmutter['Efficiency'] == timer]
         plt.figure()
         #unique_xs= sorted(eff_df['Cores'].unique())
-        sns.pointplot( data=eff_df_OpenMP, x=eff_df_OpenMP['Cores'], y=eff_df_OpenMP['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False, dodge= True )
-        sns.boxplot(data=eff_df_OpenMP, x=eff_df_OpenMP['Cores'],    y=eff_df_OpenMP['Percentage'], showcaps= False, linewidth= 0.5, color= 'red', label = 'OpenMP', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_Perlmutter, x=eff_df_Perlmutter['Cores'], y=eff_df_Perlmutter['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False, dodge= True )
+        sns.boxplot(data=eff_df_Perlmutter, x=eff_df_Perlmutter['Cores'],    y=eff_df_Perlmutter['Percentage'], showcaps= False, linewidth= 0.5, color= 'red', label = 'Perlmutter', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
 
-        sns.pointplot( data=eff_df_MPI, x=eff_df_MPI['Cores'], y=eff_df_MPI['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
-        sns.boxplot(data=eff_df_MPI, x=eff_df_MPI['Cores'],    y=eff_df_MPI['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = 'MPI', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_Frontier, x=eff_df_Frontier['Cores'], y=eff_df_Frontier['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
+        sns.boxplot(data=eff_df_Frontier, x=eff_df_Frontier['Cores'],    y=eff_df_Frontier['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = 'Frontier', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
         plt.xlabel('Nodes')
         plt.ylabel('Percentage')
         plt.legend()
@@ -492,12 +492,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_OpenMP = df_OpenMP[df_OpenMP['Cores']== core]
-        core_group_MPI = df_MPI[df_MPI['Cores']== core]
+        core_group_Perlmutter = df_Perlmutter[df_Perlmutter['Cores']== core]
+        core_group_Frontier = df_Frontier[df_Frontier['Cores']== core]
 
         for timer in timers:
 
-            tstat, pval= trimmed_ttest(core_group_OpenMP[timer], core_group_MPI[timer], with_pval=True)
+            tstat, pval= trimmed_ttest(core_group_Perlmutter[timer], core_group_Frontier[timer], with_pval=True)
             tstat_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -510,12 +510,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_OpenMP = df_OpenMP[df_OpenMP['Cores']== core]
-        core_group_MPI = df_MPI[df_MPI['Cores']== core]
+        core_group_Perlmutter = df_Perlmutter[df_Perlmutter['Cores']== core]
+        core_group_Frontier = df_Frontier[df_Frontier['Cores']== core]
 
         for timer in timers:
 
-            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_MPI[timer]), np.log(core_group_OpenMP[timer]))
+            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_Frontier[timer]), np.log(core_group_Perlmutter[timer]))
             mean_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -531,11 +531,11 @@ if __name__ == "__main__":
 
     
     
-    """  altered_OpenMP['Timer_front'] = altered_OpenMP['Time']
-    merge_df = altered_OpenMP
-    merge_df['Timer_MPI']  = altered_MPI['Time']
-    merge_df['Time'] = merge_df['Timer_MPI'] - merge_df['Timer_front'] 
-    difference = merge_df.drop(columns=['Timer_front', 'Timer_MPI', 'Dataset']) """
+    """  altered_Perlmutter['Timer_front'] = altered_Perlmutter['Time']
+    merge_df = altered_Perlmutter
+    merge_df['Timer_Frontier']  = altered_Frontier['Time']
+    merge_df['Time'] = merge_df['Timer_Frontier'] - merge_df['Timer_front'] 
+    difference = merge_df.drop(columns=['Timer_front', 'Timer_Frontier', 'Dataset']) """
 
     """  sci_list = []
 
@@ -556,22 +556,22 @@ if __name__ == "__main__":
     sci_df = pd.DataFrame(sci_list) """
 
 
-    unique_timers = altered_OpenMP['Timer'].unique()
+    unique_timers = altered_Perlmutter['Timer'].unique()
 
     for i, timer in enumerate(unique_timers):
         # Filter dataframe for the current timer
-        timer_df_OpenMP = altered_OpenMP[altered_OpenMP['Timer'] == timer]
-        timer_df_MPI = altered_MPI[altered_MPI['Timer'] == timer]
+        timer_df_Perlmutter = altered_Perlmutter[altered_Perlmutter['Timer'] == timer]
+        timer_df_Frontier = altered_Frontier[altered_Frontier['Timer'] == timer]
 
         
         plt.figure()
-        unique_sorted_OpenMP= sorted(timer_df_OpenMP['Cores'].unique())
-        #OpenMP
-        sns.pointplot( data=timer_df_OpenMP, x=timer_df_OpenMP['Cores'], y=timer_df_OpenMP['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_OpenMP, x=timer_df_OpenMP['Cores'],    y=timer_df_OpenMP['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'OpenMP', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-        #MPI
-        sns.pointplot( data=timer_df_MPI, x=timer_df_MPI['Cores'], y=timer_df_MPI['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_MPI, x=timer_df_MPI['Cores'],    y=timer_df_MPI['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'MPI' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        unique_sorted_Perlmutter= sorted(timer_df_Perlmutter['Cores'].unique())
+        #Perlmutter
+        sns.pointplot( data=timer_df_Perlmutter, x=timer_df_Perlmutter['Cores'], y=timer_df_Perlmutter['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_Perlmutter, x=timer_df_Perlmutter['Cores'],    y=timer_df_Perlmutter['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'Perlmutter', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        #Frontier
+        sns.pointplot( data=timer_df_Frontier, x=timer_df_Frontier['Cores'], y=timer_df_Frontier['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_Frontier, x=timer_df_Frontier['Cores'],    y=timer_df_Frontier['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'Frontier' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
 
         
 
@@ -587,7 +587,7 @@ if __name__ == "__main__":
           
             table_data = table_data.values
 
-        col_labels = ["Nodes", 'OpenMP Speedup' , "99% CI: (LL, UL)" ]
+        col_labels = ["Nodes", 'Perlmutter Speedup' , "99% CI: (LL, UL)" ]
         table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5])
 
 

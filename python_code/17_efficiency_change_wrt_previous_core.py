@@ -347,12 +347,23 @@ def efficiency(df, timer,cores):
         base_comp_time = val[0]
         
         #print(base_comp_time)
-        
-        ideal_times=(base_comp_time/[2**core for core in range(len(cores))])
-        #print(ideal_times)
-        efficiency_run = (ideal_times/val) *100
-        efficiency_actual.extend(efficiency_run)
+
+        for i in range(len(val)):
+            #previous time
+            if i  == 0:
+                efficiency_actual.append(100)
+            else:
+                #previous time
+                tm = val[i-1]
+                tn = val[i]
+                n = cores[i]
+                m = cores[i-1]
+                eff = (tm/tn)/(n/m)*100
+                print(eff)
+                efficiency_actual.append(eff)
+
     return efficiency_actual
+
 
 if __name__ == "__main__":
     folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files\perl_gpu_cudauvm_on_vs_off_text'

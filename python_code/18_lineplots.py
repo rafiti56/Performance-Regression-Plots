@@ -27,7 +27,7 @@ def get_sorted_files(folder_path, file_pattern):
 def process_file1(folder_path):
     #specifies file pattern
     #change to text_file pattern
-    file_pattern = r'MPI_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'4threads_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
     results_front = {}
@@ -347,23 +347,34 @@ def efficiency(df, timer,cores):
         base_comp_time = val[0]
         
         #print(base_comp_time)
-        
-        ideal_times=(base_comp_time/[2**core for core in range(len(cores))])
-        #print(ideal_times)
-        efficiency_run = (ideal_times/val) *100
-        efficiency_actual.extend(efficiency_run)
+
+        for i in range(len(val)):
+            #previous time
+            if i  == 0:
+                efficiency_actual.append(100)
+            else:
+                #previous time
+                tm = val[i-1]
+                tn = val[i]
+                n = cores[i]
+                m = cores[i-1]
+                eff = (tm/tn)/(n/m)*100
+                print(eff)
+                efficiency_actual.append(eff)
+
     return efficiency_actual
 
+
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files\OPMPI_2threads_vs_MPI_only_text'
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files\4threads_vs_2threads'
 
 
 
     data_2threads = res(folder_path, r'OP_cores\d+_run\d+')
 
-    data_MPI = res(folder_path, r'MPI_cores\d+_run\d+')
+    data_4threads = res(folder_path, r'OP4_cores\d+_run\d+')
 
-    data_MPI.process_files()
+    data_4threads.process_files()
 
     data_2threads.process_files()
 
@@ -373,7 +384,7 @@ if __name__ == "__main__":
     data_list =[]
 
     #Change labeling
-    process_data(data_MPI.results, 'MPI')
+    process_data(data_4threads.results, '4threads')
     process_data(data_2threads.results, '2threads')
 
     
@@ -421,11 +432,11 @@ if __name__ == "__main__":
 
 
 
-    df_MPI = df[df['Dataset'] == 'MPI']
+    df_4threads = df[df['Dataset'] == '4threads']
 
     df_2threads = df[df['Dataset'] == '2threads']
 
-    altered_MPI = df_MPI.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_4threads = df_4threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     altered_2threads = df_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     
     
@@ -438,66 +449,66 @@ if __name__ == "__main__":
     cores = [4,8,16,32,64]
 
     #efficiency
-    efficiency_df_MPI = pd.DataFrame()
+    efficiency_df_4threads = pd.DataFrame()
     efficiency_df_2threads = pd.DataFrame()
 
     print(df.columns)
     for timer in timers:
             
             
-            eff_MPI = efficiency(df_MPI, timer,cores)
+            eff_4threads = efficiency(df_4threads, timer,cores)
             eff_2threads = efficiency(df_2threads, timer,cores)
         
-            efficiency_df_MPI[f"Efficiency {timer}"] = eff_MPI
+            efficiency_df_4threads[f"Efficiency {timer}"] = eff_4threads
             efficiency_df_2threads[f"Efficiency {timer}"] = eff_2threads
 
             
-            df_sorted_MPI = df_MPI.sort_values(by=['Run', 'Cores', ]) 
+            df_sorted_4threads = df_4threads.sort_values(by=['Run', 'Cores', ]) 
             #########################
             df_sorted_2threads = df_2threads.sort_values(by=['Run', 'Cores', ]) 
 
-            df_final_MPI = pd.concat([df_sorted_MPI.reset_index(drop=True), efficiency_df_MPI.reset_index(drop=True)], axis=1)
+            df_final_4threads = pd.concat([df_sorted_4threads.reset_index(drop=True), efficiency_df_4threads.reset_index(drop=True)], axis=1)
             df_final_2threads = pd.concat([df_sorted_2threads.reset_index(drop=True), efficiency_df_2threads.reset_index(drop=True)], axis=1)
-    print(df_final_MPI)
-    df_eff_MPI = df_final_MPI.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+    print(df_final_4threads)
+    df_eff_4threads = df_final_4threads.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
-    eff_melt_MPI = df_eff_MPI.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
+    eff_melt_4threads = df_eff_4threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
 
     df_eff_2threads = df_final_2threads.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
     eff_melt_2threads = df_eff_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
-    print(eff_melt_MPI)
+    print(eff_melt_4threads)
 
-    unique_effs = eff_melt_MPI['Efficiency'].unique()
+    unique_effs = eff_melt_4threads['Efficiency'].unique()
+
+
 
     for i, timer in enumerate(unique_effs):
         eff_df_2threads = eff_melt_2threads[eff_melt_2threads['Efficiency'] == timer]
-        eff_df_MPI = eff_melt_MPI[eff_melt_MPI['Efficiency'] == timer]
+        eff_df_4threads = eff_melt_4threads[eff_melt_4threads['Efficiency'] == timer]
         plt.figure()
         #unique_xs= sorted(eff_df['Cores'].unique())
-        sns.pointplot( data=eff_df_MPI, x=eff_df_MPI['Cores'], y=eff_df_MPI['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False, dodge= True )
-        sns.boxplot(data=eff_df_MPI, x=eff_df_MPI['Cores'],    y=eff_df_MPI['Percentage'], showcaps= False, linewidth= 0.5, color= 'red', label = 'MPI', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_4threads, x=eff_df_4threads['Cores'], y=eff_df_4threads['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =True, dodge= True )
 
-        sns.pointplot( data=eff_df_2threads, x=eff_df_2threads['Cores'], y=eff_df_2threads['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
-        sns.boxplot(data=eff_df_2threads, x=eff_df_2threads['Cores'],    y=eff_df_2threads['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = '2threads', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_2threads, x=eff_df_2threads['Cores'], y=eff_df_2threads['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =True, dodge = True)
+        
         plt.xlabel('Nodes')
         plt.ylabel('Percentage')
         plt.legend()
         plt.title(f'Box Plot with Mean Error Bars - Efficiency: {timer}')
         plt.savefig(f'Efficiency {timer} Boxplot with mean errror bars', dpi =300)
-
     tstat_list = []
 
     for core in cores:
         
-        core_group_MPI = df_MPI[df_MPI['Cores']== core]
+        core_group_4threads = df_4threads[df_4threads['Cores']== core]
         core_group_2threads = df_2threads[df_2threads['Cores']== core]
 
         for timer in timers:
 
-            tstat, pval= trimmed_ttest(core_group_MPI[timer], core_group_2threads[timer], with_pval=True)
+            tstat, pval= trimmed_ttest(core_group_4threads[timer], core_group_2threads[timer], with_pval=True)
             tstat_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -510,12 +521,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_MPI = df_MPI[df_MPI['Cores']== core]
+        core_group_4threads = df_4threads[df_4threads['Cores']== core]
         core_group_2threads = df_2threads[df_2threads['Cores']== core]
 
         for timer in timers:
 
-            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_2threads[timer]), np.log(core_group_MPI[timer]))
+            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_2threads[timer]), np.log(core_group_4threads[timer]))
             mean_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -531,8 +542,8 @@ if __name__ == "__main__":
 
     
     
-    """  altered_MPI['Timer_front'] = altered_MPI['Time']
-    merge_df = altered_MPI
+    """  altered_4threads['Timer_front'] = altered_4threads['Time']
+    merge_df = altered_4threads
     merge_df['Timer_2threads']  = altered_2threads['Time']
     merge_df['Time'] = merge_df['Timer_2threads'] - merge_df['Timer_front'] 
     difference = merge_df.drop(columns=['Timer_front', 'Timer_2threads', 'Dataset']) """
@@ -556,39 +567,28 @@ if __name__ == "__main__":
     sci_df = pd.DataFrame(sci_list) """
 
 
-    unique_timers = altered_MPI['Timer'].unique()
+    unique_timers = altered_4threads['Timer'].unique()
+    # Filter and divide the 'Value' column directly in the original DataFrame
+    altered_2threads.loc[altered_2threads['Timer'] == 'Albany Piro', 'Time'] /= 44.9358
+    altered_4threads.loc[altered_4threads['Timer'] == 'Albany Piro', 'Time'] /= 44.9358
+
+
+    
 
     for i, timer in enumerate(unique_timers):
         # Filter dataframe for the current timer
-        timer_df_MPI = altered_MPI[altered_MPI['Timer'] == timer]
+        timer_df_4threads = altered_4threads[altered_4threads['Timer'] == timer]
         timer_df_2threads = altered_2threads[altered_2threads['Timer'] == timer]
 
-        
+        print(timer_df_2threads)
         plt.figure()
-        unique_sorted_MPI= sorted(timer_df_MPI['Cores'].unique())
-        #MPI
-        sns.pointplot( data=timer_df_MPI, x=timer_df_MPI['Cores'], y=timer_df_MPI['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_MPI, x=timer_df_MPI['Cores'],    y=timer_df_MPI['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'MPI', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-        #2threads
-        sns.pointplot( data=timer_df_2threads, x=timer_df_2threads['Cores'], y=timer_df_2threads['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_2threads, x=timer_df_2threads['Cores'],    y=timer_df_2threads['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = '2threads' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        unique_sorted_4threads= sorted(timer_df_4threads['Cores'].unique())
 
         
+        sns.lineplot(data = timer_df_2threads, x=timer_df_2threads['Cores'], y=timer_df_2threads['Time'], linewidth = 1,color = 'blue')
 
-        for core in cores:
 
-            core_df = mean_df[mean_df['Cores'] ==core]
-
-            sci_timer = mean_df[mean_df['Timer'] == timer]
-            table_data = sci_timer[['Cores', 'Mean Difference', 'Bounds']].copy()
-            table_data['Bounds'] = table_data['Bounds'].apply(lambda x: f'({np.exp(x[0]):.2f}, {np.exp(x[1]):.2f})')
-            table_data['Mean Difference'] = table_data['Mean Difference'].apply(lambda x: f'{np.exp(x):.2f}')
-            
-          
-            table_data = table_data.values
-
-        col_labels = ["Nodes", 'MPI Speedup' , "99% CI: (LL, UL)" ]
-        table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5])
+        sns.lineplot(data=timer_df_4threads, x=timer_df_4threads['Cores'], y=timer_df_4threads['Time'], linewidth = 1, color = 'orange')
 
 
         plt.subplots_adjust(bottom=0.4)
@@ -597,6 +597,12 @@ if __name__ == "__main__":
         plt.xlabel('Nodes')
         plt.ylabel('Wall-clock time')
         plt.legend()
+        plt.xscale('log', base =2)
         plt.ylim(ymin = 0)
+        plt.xlim(16,32)
         plt.title(f'Timer: {timer}')
         plt.savefig(f'{timer} Boxplot with mean errror bars', dpi =300)
+
+
+    
+

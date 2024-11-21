@@ -27,7 +27,7 @@ def get_sorted_files(folder_path, file_pattern):
 def process_file1(folder_path):
     #specifies file pattern
     #change to text_file pattern
-    file_pattern = r'uvmOFF_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'MPI_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
     results_front = {}
@@ -74,10 +74,10 @@ def process_file1(folder_path):
 def process_files2(folder_path):
     #specifies file pattern
     #change to text_file pattern
-    file_pattern = r'uvmON_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
+    file_pattern = r'2threads_cores\d+_run\d+'  # Adjust the pattern as needed to match the specific files
     sorted_files = get_sorted_files(folder_path, file_pattern)
     #calls for get_sorted files function and assigns it to sorted_files
-    results_uvmON = {}
+    results_2threads = {}
     
     for filename in sorted_files:
         #for each filename in sorted_files (loops through each item on the list)
@@ -106,15 +106,15 @@ def process_files2(folder_path):
             #gets rid of "cores" and converts remaining number string to an integer
             run = int(parts[2].replace("run", ""))
             #gets rid of "runs" and converts remaining number string to an integer
-            if core not in results_uvmON:
+            if core not in results_2threads:
                 #Add core as a key in the dictionary if not there
-                results_uvmON[core] = {}
-            if run not in results_uvmON[core]:
+                results_2threads[core] = {}
+            if run not in results_2threads[core]:
                 #Adds run as a nested dictionary under core key and creates and empty list to append the extracted timer values from the file (Piro, Albany, FIll, linsonve)
-                results_uvmON[core][run] = []
-            results_uvmON[core][run].append(extracted_timers)
+                results_2threads[core][run] = []
+            results_2threads[core][run].append(extracted_timers)
     #print(results_front)
-    return results_uvmON
+    return results_2threads
 
 def trim(x, p=.1, threshold=3, outliers=False):
     '''
@@ -366,17 +366,17 @@ def efficiency(df, timer,cores):
 
 
 if __name__ == "__main__":
-    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files\perl_gpu_cudauvm_on_vs_off_text'
+    folder_path = r'C:\Users\Rafael\OneDrive\Documents\GitHub\Performance-Regression-Plots\text_files\OPMPI_2threads_vs_MPI_only_text'
 
 
 
-    data_uvmON = res(folder_path, r'perl_cores\d+_run\d+')
+    data_2threads = res(folder_path, r'OP_cores\d+_run\d+')
 
-    data_uvmOFF = res(folder_path, r'perlmutterOFF_cores\d+_run\d+')
+    data_MPI = res(folder_path, r'MPI_cores\d+_run\d+')
 
-    data_uvmOFF.process_files()
+    data_MPI.process_files()
 
-    data_uvmON.process_files()
+    data_2threads.process_files()
 
     
 
@@ -384,8 +384,8 @@ if __name__ == "__main__":
     data_list =[]
 
     #Change labeling
-    process_data(data_uvmOFF.results, 'uvmOFF')
-    process_data(data_uvmON.results, 'uvmON')
+    process_data(data_MPI.results, 'MPI')
+    process_data(data_2threads.results, '2threads')
 
     
     # Convert the list to a DataFrame
@@ -432,12 +432,12 @@ if __name__ == "__main__":
 
 
 
-    df_uvmOFF = df[df['Dataset'] == 'uvmOFF']
+    df_MPI = df[df['Dataset'] == 'MPI']
 
-    df_uvmON = df[df['Dataset'] == 'uvmON']
+    df_2threads = df[df['Dataset'] == '2threads']
 
-    altered_uvmOFF = df_uvmOFF.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    altered_uvmON = df_uvmON.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_MPI = df_MPI.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_2threads = df_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     
     
 
@@ -449,50 +449,50 @@ if __name__ == "__main__":
     cores = [4,8,16,32,64]
 
     #efficiency
-    efficiency_df_uvmOFF = pd.DataFrame()
-    efficiency_df_uvmON = pd.DataFrame()
+    efficiency_df_MPI = pd.DataFrame()
+    efficiency_df_2threads = pd.DataFrame()
 
     print(df.columns)
     for timer in timers:
             
             
-            eff_uvmOFF = efficiency(df_uvmOFF, timer,cores)
-            eff_uvmON = efficiency(df_uvmON, timer,cores)
+            eff_MPI = efficiency(df_MPI, timer,cores)
+            eff_2threads = efficiency(df_2threads, timer,cores)
         
-            efficiency_df_uvmOFF[f"Efficiency {timer}"] = eff_uvmOFF
-            efficiency_df_uvmON[f"Efficiency {timer}"] = eff_uvmON
+            efficiency_df_MPI[f"Efficiency {timer}"] = eff_MPI
+            efficiency_df_2threads[f"Efficiency {timer}"] = eff_2threads
 
             
-            df_sorted_uvmOFF = df_uvmOFF.sort_values(by=['Run', 'Cores', ]) 
+            df_sorted_MPI = df_MPI.sort_values(by=['Run', 'Cores', ]) 
             #########################
-            df_sorted_uvmON = df_uvmON.sort_values(by=['Run', 'Cores', ]) 
+            df_sorted_2threads = df_2threads.sort_values(by=['Run', 'Cores', ]) 
 
-            df_final_uvmOFF = pd.concat([df_sorted_uvmOFF.reset_index(drop=True), efficiency_df_uvmOFF.reset_index(drop=True)], axis=1)
-            df_final_uvmON = pd.concat([df_sorted_uvmON.reset_index(drop=True), efficiency_df_uvmON.reset_index(drop=True)], axis=1)
-    print(df_final_uvmOFF)
-    df_eff_uvmOFF = df_final_uvmOFF.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+            df_final_MPI = pd.concat([df_sorted_MPI.reset_index(drop=True), efficiency_df_MPI.reset_index(drop=True)], axis=1)
+            df_final_2threads = pd.concat([df_sorted_2threads.reset_index(drop=True), efficiency_df_2threads.reset_index(drop=True)], axis=1)
+    print(df_final_MPI)
+    df_eff_MPI = df_final_MPI.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
-    eff_melt_uvmOFF = df_eff_uvmOFF.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
+    eff_melt_MPI = df_eff_MPI.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
 
-    df_eff_uvmON = df_final_uvmON.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+    df_eff_2threads = df_final_2threads.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
-    eff_melt_uvmON = df_eff_uvmON.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
+    eff_melt_2threads = df_eff_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
-    print(eff_melt_uvmOFF)
+    print(eff_melt_MPI)
 
-    unique_effs = eff_melt_uvmOFF['Efficiency'].unique()
+    unique_effs = eff_melt_MPI['Efficiency'].unique()
 
     for i, timer in enumerate(unique_effs):
-        eff_df_uvmON = eff_melt_uvmON[eff_melt_uvmON['Efficiency'] == timer]
-        eff_df_uvmOFF = eff_melt_uvmOFF[eff_melt_uvmOFF['Efficiency'] == timer]
+        eff_df_2threads = eff_melt_2threads[eff_melt_2threads['Efficiency'] == timer]
+        eff_df_MPI = eff_melt_MPI[eff_melt_MPI['Efficiency'] == timer]
         plt.figure()
         #unique_xs= sorted(eff_df['Cores'].unique())
-        sns.pointplot( data=eff_df_uvmOFF, x=eff_df_uvmOFF['Cores'], y=eff_df_uvmOFF['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False, dodge= True )
-        sns.boxplot(data=eff_df_uvmOFF, x=eff_df_uvmOFF['Cores'],    y=eff_df_uvmOFF['Percentage'], showcaps= False, linewidth= 0.5, color= 'red', label = 'uvmOFF', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_MPI, x=eff_df_MPI['Cores'], y=eff_df_MPI['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False, dodge= True )
+        sns.boxplot(data=eff_df_MPI, x=eff_df_MPI['Cores'],    y=eff_df_MPI['Percentage'], showcaps= False, linewidth= 0.5, color= 'red', label = 'MPI', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
 
-        sns.pointplot( data=eff_df_uvmON, x=eff_df_uvmON['Cores'], y=eff_df_uvmON['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
-        sns.boxplot(data=eff_df_uvmON, x=eff_df_uvmON['Cores'],    y=eff_df_uvmON['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = 'uvmON', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_2threads, x=eff_df_2threads['Cores'], y=eff_df_2threads['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
+        sns.boxplot(data=eff_df_2threads, x=eff_df_2threads['Cores'],    y=eff_df_2threads['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = '2threads', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
         plt.xlabel('Nodes')
         plt.ylabel('Percentage')
         plt.legend()
@@ -503,12 +503,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_uvmOFF = df_uvmOFF[df_uvmOFF['Cores']== core]
-        core_group_uvmON = df_uvmON[df_uvmON['Cores']== core]
+        core_group_MPI = df_MPI[df_MPI['Cores']== core]
+        core_group_2threads = df_2threads[df_2threads['Cores']== core]
 
         for timer in timers:
 
-            tstat, pval= trimmed_ttest(core_group_uvmOFF[timer], core_group_uvmON[timer], with_pval=True)
+            tstat, pval= trimmed_ttest(core_group_MPI[timer], core_group_2threads[timer], with_pval=True)
             tstat_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -521,12 +521,12 @@ if __name__ == "__main__":
 
     for core in cores:
         
-        core_group_uvmOFF = df_uvmOFF[df_uvmOFF['Cores']== core]
-        core_group_uvmON = df_uvmON[df_uvmON['Cores']== core]
+        core_group_MPI = df_MPI[df_MPI['Cores']== core]
+        core_group_2threads = df_2threads[df_2threads['Cores']== core]
 
         for timer in timers:
 
-            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_uvmON[timer]), np.log(core_group_uvmOFF[timer]))
+            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_2threads[timer]), np.log(core_group_MPI[timer]))
             mean_list.append({
                 'Cores': core,
                 'Timer': timer,
@@ -542,11 +542,11 @@ if __name__ == "__main__":
 
     
     
-    """  altered_uvmOFF['Timer_front'] = altered_uvmOFF['Time']
-    merge_df = altered_uvmOFF
-    merge_df['Timer_uvmON']  = altered_uvmON['Time']
-    merge_df['Time'] = merge_df['Timer_uvmON'] - merge_df['Timer_front'] 
-    difference = merge_df.drop(columns=['Timer_front', 'Timer_uvmON', 'Dataset']) """
+    """  altered_MPI['Timer_front'] = altered_MPI['Time']
+    merge_df = altered_MPI
+    merge_df['Timer_2threads']  = altered_2threads['Time']
+    merge_df['Time'] = merge_df['Timer_2threads'] - merge_df['Timer_front'] 
+    difference = merge_df.drop(columns=['Timer_front', 'Timer_2threads', 'Dataset']) """
 
     """  sci_list = []
 
@@ -567,22 +567,22 @@ if __name__ == "__main__":
     sci_df = pd.DataFrame(sci_list) """
 
 
-    unique_timers = altered_uvmOFF['Timer'].unique()
+    unique_timers = altered_MPI['Timer'].unique()
 
     for i, timer in enumerate(unique_timers):
         # Filter dataframe for the current timer
-        timer_df_uvmOFF = altered_uvmOFF[altered_uvmOFF['Timer'] == timer]
-        timer_df_uvmON = altered_uvmON[altered_uvmON['Timer'] == timer]
+        timer_df_MPI = altered_MPI[altered_MPI['Timer'] == timer]
+        timer_df_2threads = altered_2threads[altered_2threads['Timer'] == timer]
 
         
         plt.figure()
-        unique_sorted_uvmOFF= sorted(timer_df_uvmOFF['Cores'].unique())
-        #uvmOFF
-        sns.pointplot( data=timer_df_uvmOFF, x=timer_df_uvmOFF['Cores'], y=timer_df_uvmOFF['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_uvmOFF, x=timer_df_uvmOFF['Cores'],    y=timer_df_uvmOFF['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'uvmOFF', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-        #uvmON
-        sns.pointplot( data=timer_df_uvmON, x=timer_df_uvmON['Cores'], y=timer_df_uvmON['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_uvmON, x=timer_df_uvmON['Cores'],    y=timer_df_uvmON['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'uvmON' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        unique_sorted_MPI= sorted(timer_df_MPI['Cores'].unique())
+        #MPI
+        sns.pointplot( data=timer_df_MPI, x=timer_df_MPI['Cores'], y=timer_df_MPI['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_MPI, x=timer_df_MPI['Cores'],    y=timer_df_MPI['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = 'MPI', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        #2threads
+        sns.pointplot( data=timer_df_2threads, x=timer_df_2threads['Cores'], y=timer_df_2threads['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_2threads, x=timer_df_2threads['Cores'],    y=timer_df_2threads['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = '2threads' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
 
         
 
@@ -598,7 +598,7 @@ if __name__ == "__main__":
           
             table_data = table_data.values
 
-        col_labels = ["Nodes", 'uvmOFF Speedup' , "99% CI: (LL, UL)" ]
+        col_labels = ["Nodes", 'MPI Speedup' , "99% CI: (LL, UL)" ]
         table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5])
 
 

@@ -204,23 +204,28 @@ def trimmed_ttest_bounds(x, y, p=.1, alpha=0.01, num_tests=1):
 
 if __name__ == "__main__":
     #Change to folder path where the text files are located
-    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files\4threads_vs_2threads'
+    folder_path = r'C:\Users\rcaller\Documents\GitHub\Performance-Regression-Plots\text_files\serial_gauss_vs_serial_block_vs_4threads'
 
 
     #Change data_'variable_name1' in all ocurrences
-    data_2threads = case(folder_path, r'OP_cores\d+_run\d+')
+    data_GaussSeidel = case(folder_path, r'new_cores\d+_run\d+')
+
+    data_BlockJacobi = case(folder_path, r'old_cores\d+_run\d+')
     #Change _'variable_name2' in all ocurrences
     data_4threads = case(folder_path, r'OP4_cores\d+_run\d+')
 
     data_4threads.process_files()
 
-    data_2threads.process_files()
+    data_GaussSeidel.process_files()
+
+    data_BlockJacobi.process_files()
 
     data_list =[]
 
     #Change labeling
     process_data(data_4threads.results, '4threads')
-    process_data(data_2threads.results, '2threads')
+    process_data(data_GaussSeidel.results, 'GaussSeidel')
+    process_data(data_BlockJacobi.results, 'BlockJacobi')
 
         
     # Convert the list to a DataFrame
@@ -261,104 +266,127 @@ if __name__ == "__main__":
 
     df_4threads = df[df['Dataset'] == '4threads']
 
-    df_2threads = df[df['Dataset'] == '2threads']
+    df_GaussSeidel = df[df['Dataset'] == 'GaussSeidel']
 
+    df_BlockJacobi = df[df["Dataset"] == 'BlockJacobi']
+
+
+    altered_BlockJacobi = df_BlockJacobi.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
     altered_4threads = df_4threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
-    altered_2threads = df_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    altered_GaussSeidel = df_GaussSeidel.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
 
     timers = ['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin']
     cores = [4,8,16,32,64]
 
-    final_time_2threads = df_2threads.drop(['No of NonLinear Iterations', 'No of Linear Iterations', 'Linear/Nonlinear'], axis =1)
+    final_time_BlockJacobi = df_BlockJacobi.drop(['No of NonLinear Iterations', 'No of Linear Iterations', 'Linear/Nonlinear'], axis =1)
+
+    final_time_GaussSeidel = df_GaussSeidel.drop(['No of NonLinear Iterations', 'No of Linear Iterations', 'Linear/Nonlinear'], axis =1)
 
     final_time_4threads = df_4threads.drop(['No of NonLinear Iterations', 'No of Linear Iterations', 'Linear/Nonlinear'], axis =1)
 
-    final_2threads_melt = final_time_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+    final_BlockJacobi_melt = final_time_BlockJacobi.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
+
+    final_GaussSeidel_melt = final_time_GaussSeidel.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
 
     final_4threads_melt = final_time_4threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name ='Timer', value_name= 'Time')
 
+    efficiency_df_BlockJacobi = pd.DataFrame()
     efficiency_df_4threads = pd.DataFrame()
-    efficiency_df_2threads = pd.DataFrame()
+    efficiency_df_GaussSeidel = pd.DataFrame()
 
     for timer in timers:
             
+            efficiency_df_BlockJacobi[f"Efficiency {timer}"] = efficiency(df_BlockJacobi, timer,cores)
             efficiency_df_4threads[f"Efficiency {timer}"] = efficiency(df_4threads, timer,cores)
-            efficiency_df_2threads[f"Efficiency {timer}"] = efficiency(df_2threads, timer,cores)
+            efficiency_df_GaussSeidel[f"Efficiency {timer}"] = efficiency(df_GaussSeidel, timer,cores)
 
-            
+            df_sorted_BlockJacobi = df_BlockJacobi.sort_values(by=['Run', 'Cores',])
             df_sorted_4threads = df_4threads.sort_values(by=['Run', 'Cores', ]) 
-            df_sorted_2threads = df_2threads.sort_values(by=['Run', 'Cores', ]) 
+            df_sorted_GaussSeidel = df_GaussSeidel.sort_values(by=['Run', 'Cores', ]) 
 
+            df_final_BlockJacobi = pd.concat([df_sorted_BlockJacobi.reset_index(drop=True), efficiency_df_BlockJacobi.reset_index(drop=True)], axis=1)
             df_final_4threads =  pd.concat([df_sorted_4threads.reset_index(drop=True), efficiency_df_4threads.reset_index(drop=True)], axis=1)
-            df_final_2threads = pd.concat([df_sorted_2threads.reset_index(drop=True), efficiency_df_2threads.reset_index(drop=True)], axis=1)
+            df_final_GaussSeidel = pd.concat([df_sorted_GaussSeidel.reset_index(drop=True), efficiency_df_GaussSeidel.reset_index(drop=True)], axis=1)
 
     df_eff_4threads = df_final_4threads.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
     
     eff_plot_4threads = df_eff_4threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
 
-    df_eff_2threads = df_final_2threads.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+    df_eff_GaussSeidel = df_final_GaussSeidel.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
 
-    eff_plot_2threads = df_eff_2threads.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
+    eff_plot_GaussSeidel = df_eff_GaussSeidel.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
+    
+    df_eff_BlockJacobi = df_final_BlockJacobi.drop(['Albany Piro', 'Total Fill Time', 'Precond', 'Total Lin', 'No of Linear Iterations', "No of NonLinear Iterations", 'Linear/Nonlinear'], axis =1 )
+    eff_plot_BlockJacobi = df_eff_BlockJacobi.melt(id_vars=['Cores', 'Run', 'Dataset'], var_name = 'Efficiency', value_name = 'Percentage')
 
     unique_effs = eff_plot_4threads['Efficiency'].unique()
 
 
+
     for i, timer in enumerate(unique_effs):
-        eff_df_2threads = eff_plot_2threads[eff_plot_2threads['Efficiency'] == timer]
+        eff_df_GaussSeidel = eff_plot_GaussSeidel[eff_plot_GaussSeidel['Efficiency'] == timer]
         eff_df_4threads = eff_plot_4threads[eff_plot_4threads['Efficiency'] == timer]
+        eff_df_BlockJacobi = eff_plot_BlockJacobi[eff_plot_BlockJacobi['Efficiency'] == timer]
+
         plt.figure()
         #unique_xs= sorted(eff_df['Cores'].unique())
         sns.pointplot( data=eff_df_4threads, x=eff_df_4threads['Cores'], y=eff_df_4threads['Percentage'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False, dodge= True )
         sns.boxplot(data=eff_df_4threads, x=eff_df_4threads['Cores'],    y=eff_df_4threads['Percentage'], showcaps= False, linewidth= 0.5, color= 'red', label = '4threads', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
 
-        sns.pointplot( data=eff_df_2threads, x=eff_df_2threads['Cores'], y=eff_df_2threads['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
-        sns.boxplot(data=eff_df_2threads, x=eff_df_2threads['Cores'],    y=eff_df_2threads['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = '2threads', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+        sns.pointplot( data=eff_df_GaussSeidel, x=eff_df_GaussSeidel['Cores'], y=eff_df_GaussSeidel['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
+        sns.boxplot(data=eff_df_GaussSeidel, x=eff_df_GaussSeidel['Cores'],    y=eff_df_GaussSeidel['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = 'GaussSeidel', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+
+        sns.pointplot( data=eff_df_BlockJacobi, x=eff_df_BlockJacobi['Cores'], y=eff_df_BlockJacobi['Percentage'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False , dodge = True)
+        sns.boxplot(data=eff_df_BlockJacobi, x=eff_df_BlockJacobi['Cores'],    y=eff_df_BlockJacobi['Percentage'], showcaps= False, linewidth= 0.5, color= 'orange', label = 'BlockJacobi', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"}, dodge= True)
+
         plt.xlabel('Nodes')
         plt.ylabel('Percentage')
         plt.legend()
         plt.title(f'Box Plot with Mean Error Bars - Efficiency: {timer}')
         #plt.savefig(f'Efficiency {timer} Boxplot with mean errror bars', dpi =300)
 
-    mean_list = []
+    """ mean_list = []
 
     for core in cores:
         
-        core_group_MPI = df_4threads[df_4threads['Cores']== core]
-        core_group_2threads = df_2threads[df_2threads['Cores']== core]
+        core_group_4threads = df_4threads[df_4threads['Cores']== core]
+        core_group_GaussSeidel = df_GaussSeidel[df_GaussSeidel['Cores']== core]
 
         for timer in timers:
 
-            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_2threads[timer]), np.log(core_group_MPI[timer]))
+            log_mean, log_lower, log_upper= trimmed_ttest_bounds(np.log(core_group_GaussSeidel[timer]), np.log(core_group_4threads[timer]))
             mean_list.append({
                 'Cores': core,
                 'Timer': timer,
                 'Mean Difference': log_mean,
                 'Bounds': (log_lower,log_upper)
             })
-    mean_df = pd.DataFrame(mean_list)
+    mean_df = pd.DataFrame(mean_list) """
 
     unique_timers = final_4threads_melt['Timer'].unique()
 
     for i, timer in enumerate(unique_timers):
         # Filter dataframe for the current timer
         timer_df_4threads = final_4threads_melt[final_4threads_melt['Timer'] == timer]
-        timer_df_2threads = final_2threads_melt[final_2threads_melt['Timer'] == timer]
-
+        timer_df_GaussSeidel = final_GaussSeidel_melt[final_GaussSeidel_melt['Timer'] == timer]
+        timer_df_BlockJacobi = final_BlockJacobi_melt[final_BlockJacobi_melt['Timer'] == timer]
         
         plt.figure()
-        unique_sorted_MPI= sorted(timer_df_4threads['Cores'].unique())
-        #MPI
+        unique_sorted_4threads= sorted(timer_df_4threads['Cores'].unique())
+        #4threads
         sns.pointplot( data=timer_df_4threads, x=timer_df_4threads['Cores'], y=timer_df_4threads['Time'], errorbar = scitest, capsize = 0.3, color = 'red', errwidth= 0.75, join =False )
         sns.boxplot(data=timer_df_4threads, x=timer_df_4threads['Cores'],    y=timer_df_4threads['Time'], showcaps= False, linewidth= 0.5, color= 'red', label = '4threads', whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-        #2threads
-        sns.pointplot( data=timer_df_2threads, x=timer_df_2threads['Cores'], y=timer_df_2threads['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
-        sns.boxplot(data=timer_df_2threads, x=timer_df_2threads['Cores'],    y=timer_df_2threads['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = '2threads' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
-
+        #GaussSeidel
+        sns.pointplot( data=timer_df_GaussSeidel, x=timer_df_GaussSeidel['Cores'], y=timer_df_GaussSeidel['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_GaussSeidel, x=timer_df_GaussSeidel['Cores'],    y=timer_df_GaussSeidel['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'GaussSeidel' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
+        #BlockJacobi
+        sns.pointplot( data=timer_df_BlockJacobi, x=timer_df_BlockJacobi['Cores'], y=timer_df_BlockJacobi['Time'], errorbar = scitest, capsize = 0.3, color= 'orange', errwidth= 0.75, join =False )
+        sns.boxplot(data=timer_df_BlockJacobi, x=timer_df_BlockJacobi['Cores'],    y=timer_df_BlockJacobi['Time'], showcaps= False, linewidth= 0.5, color= 'orange',  label = 'BlockJacobi' , whis=(0,100), showmeans =True, meanprops={"marker":"s","markerfacecolor":"white", "markeredgecolor":"blue"})
         
 
-        for core in cores:
+        """ for core in cores:
 
             core_df = mean_df[mean_df['Cores'] ==core]
 
@@ -371,7 +399,7 @@ if __name__ == "__main__":
             table_data = table_data.values
 
         col_labels = ["Nodes", 'MPI Speedup' , "99% CI: (LL, UL)" ]
-        table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5])
+        table = plt.table(cellText=table_data, colLabels=col_labels, cellLoc='center', loc='bottom', bbox=[0, -0.75, 1, 0.5]) """
 
 
         plt.subplots_adjust(bottom=0.4)
@@ -382,4 +410,5 @@ if __name__ == "__main__":
         plt.legend()
         plt.ylim(ymin = 0)
         plt.title(f'Timer: {timer}')
+        plt.show()
         #plt.savefig(f'{timer} Boxplot with mean errror bars', dpi =300)
